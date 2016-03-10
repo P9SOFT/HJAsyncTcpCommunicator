@@ -123,7 +123,7 @@
 
 - (NSString *)addressKeyFromServerAddress:(NSString *)serverAddress serverPort:(NSUInteger)serverPort
 {
-    return [NSString stringWithFormat:@"%@:%ld", serverAddress, serverPort];
+    return [NSString stringWithFormat:@"%@:%ld", serverAddress, (unsigned long)serverPort];
 }
 
 - (NSString *)serverAddressFromAddresKey:(NSString *)addressKey
