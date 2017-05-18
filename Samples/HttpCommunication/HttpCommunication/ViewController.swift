@@ -24,7 +24,7 @@ class ViewController: UIViewController {
         self.automaticallyAdjustsScrollViewInsets = false;
         
         // get the HYAsyncTcpCommunicator from the hydra
-        communicator = Hydra.default()?.worker(forName: HJAsyncTcpCommunicatorName) as? HJAsyncTcpCommunicator
+        communicator = Hydra.default().worker(forName: HJAsyncTcpCommunicatorName) as? HJAsyncTcpCommunicator
     }
     
     override func didReceiveMemoryWarning() {
