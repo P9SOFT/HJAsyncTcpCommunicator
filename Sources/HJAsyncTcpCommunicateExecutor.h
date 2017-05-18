@@ -30,7 +30,7 @@
 #define     HJAsyncTcpCommunicateExecutorParameterKeyDisconnectHandler  @"HJAsyncTcpCommunicateExecutorParameterKeyDisconnectHandler"
 #define     HJAsyncTcpCommunicateExecutorParameterKeyCompletion         @"HJAsyncTcpCommunicateExecutorParameterKeyCompletion"
 
-typedef enum _HJAsyncTcpCommunicateExecutorOperation_
+typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateExecutorOperation)
 {
     HJAsyncTcpCommunicateExecutorOperationDummy,
     HJAsyncTcpCommunicateExecutorOperationConnect,
@@ -38,10 +38,9 @@ typedef enum _HJAsyncTcpCommunicateExecutorOperation_
     HJAsyncTcpCommunicateExecutorOperationDisconnected,
     HJAsyncTcpCommunicateExecutorOperationSend,
     HJAsyncTcpCommunicateExecutorOperationReceive
-    
-} HJAsyncTcpCommunicateExecutorOperation;
+};
 
-typedef enum _HJAsyncTcpCommunicateExecutorStatus_
+typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateExecutorStatus)
 {
     HJAsyncTcpCommunicateExecutorStatusDummy,
     HJAsyncTcpCommunicateExecutorStatusSucceed,
@@ -56,8 +55,7 @@ typedef enum _HJAsyncTcpCommunicateExecutorStatus_
     HJAsyncTcpCommunicateExecutorStatusCanceled,
     HJAsyncTcpCommunicateExecutorStatusExpired,
     HJAsyncTcpCommunicateExecutorStatusError
-    
-} HJAsyncTcpCommunicateExecutorStatus;
+};
 
 
 @interface HJAsyncTcpCommunicateExecutor : HYExecuter
