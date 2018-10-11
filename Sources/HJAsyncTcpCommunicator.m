@@ -43,18 +43,18 @@
 
 - (void)setServerAddress:(NSString *)address port:(NSUInteger)port forKey:(NSString *)key
 {
-    if( ([address length] == 0) || (port == 0) || ([key length] == 0) ) {
+    if( (address.length == 0) || (port == 0) || (key.length == 0) ) {
         return;
     }
     
     @synchronized(self) {
-        [_serverAddressForName setObject:@[address, @(port)] forKey:key];
+        _serverAddressForName[key] = @[address, @(port)];
     }
 }
 
 - (void)removeServerAddressForKey:(NSString *)key
 {
-    if( [key length] == 0 ) {
+    if( key.length == 0 ) {
         return;
     }
     
@@ -74,13 +74,13 @@
 {
     NSString *address = nil;
     NSNumber *port = nil;
-    if( [key length] > 0 ) {
+    if( key.length > 0 ) {
         @synchronized(self) {
-            address = [[_serverAddressForName objectForKey:key] objectAtIndex:0];
-            port = [[_serverAddressForName objectForKey:key] objectAtIndex:1];
+            address = _serverAddressForName[key][0];
+            port = _serverAddressForName[key][1];
         }
     }
-    if( ([address length] == 0) || (port == nil) || (dogma == nil) || (receiveHandler == nil) ) {
+    if( (address.length == 0) || (port == nil) || (dogma == nil) || (receiveHandler == nil) ) {
         if( completion != nil ) {
             completion(NO);
         }
@@ -88,7 +88,7 @@
     }
     
     HYQuery *query = [HYQuery queryWithWorkerName:self.name executerName: HJAsyncTcpCommunicateExecutorName];
-    [query setParameter:[NSNumber numberWithInteger:(NSInteger)HJAsyncTcpCommunicateExecutorOperationConnect] forKey:HJAsyncTcpCommunicateExecutorParameterKeyOperation];
+    [query setParameter:@((NSInteger)HJAsyncTcpCommunicateExecutorOperationConnect) forKey:HJAsyncTcpCommunicateExecutorParameterKeyOperation];
     [query setParameter:address forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerAddress];
     [query setParameter:port forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerPort];
     [query setParameter:@(timeout) forKey:HJAsyncTcpCommunicateExecutorParameterKeyTimeout];
@@ -103,13 +103,13 @@
 {
     NSString *address = nil;
     NSNumber *port = nil;
-    if( [key length] > 0 ) {
+    if( key.length > 0 ) {
         @synchronized(self) {
-            address = [[_serverAddressForName objectForKey:key] objectAtIndex:0];
-            port = [[_serverAddressForName objectForKey:key] objectAtIndex:1];
+            address = _serverAddressForName[key][0];
+            port = _serverAddressForName[key][1];
         }
     }
-    if( ([address length] == 0) || (port == nil) || ((headerObject == nil) && (bodyObject == nil)) ) {
+    if( (address.length == 0) || (port == nil) || ((headerObject == nil) && (bodyObject == nil)) ) {
         if( completion != nil ) {
             completion(NO);
         }
@@ -117,7 +117,7 @@
     }
     
     HYQuery *query = [HYQuery queryWithWorkerName:self.name executerName:HJAsyncTcpCommunicateExecutorName];
-    [query setParameter:[NSNumber numberWithInteger:(NSInteger)HJAsyncTcpCommunicateExecutorOperationSend] forKey: HJAsyncTcpCommunicateExecutorParameterKeyOperation];
+    [query setParameter:@((NSInteger)HJAsyncTcpCommunicateExecutorOperationSend) forKey: HJAsyncTcpCommunicateExecutorParameterKeyOperation];
     [query setParameter:address forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerAddress];
     [query setParameter:port forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerPort];
     [query setParameter:headerObject forKey:HJAsyncTcpCommunicateExecutorParameterKeyHeaderObject];
@@ -130,18 +130,18 @@
 {
     NSString *address = nil;
     NSNumber *port = nil;
-    if( [key length] > 0 ) {
+    if( key.length > 0 ) {
         @synchronized(self) {
-            address = [[_serverAddressForName objectForKey:key] objectAtIndex:0];
-            port = [[_serverAddressForName objectForKey:key] objectAtIndex:1];
+            address = _serverAddressForName[key][0];
+            port = _serverAddressForName[key][1];
         }
     }
-    if( ([address length] == 0) || (port == nil) ) {
+    if( (address.length == 0) || (port == nil) ) {
         return;
     }
     
     HYQuery *query = [HYQuery queryWithWorkerName:self.name executerName:HJAsyncTcpCommunicateExecutorName];
-    [query setParameter:[NSNumber numberWithInteger:(NSInteger)HJAsyncTcpCommunicateExecutorOperationDisconnect] forKey:HJAsyncTcpCommunicateExecutorParameterKeyOperation];
+    [query setParameter:@((NSInteger)HJAsyncTcpCommunicateExecutorOperationDisconnect) forKey:HJAsyncTcpCommunicateExecutorParameterKeyOperation];
     [query setParameter:address forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerAddress];
     [query setParameter:port forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerPort];
     [self pushQuery:query];

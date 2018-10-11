@@ -9,29 +9,29 @@
 
 @import Foundation;
 
-typedef enum _HJAsyncTcpCommunicateDogmaMethodType_
+typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateDogmaMethodType)
 {
     HJAsyncTcpCommunicateDogmaMethodTypeStream,
     HJAsyncTcpCommunicateDogmaMethodTypeBodyWithEof,
     HJAsyncTcpCommunicateDogmaMethodTypeHeaderWithBody
     
-} HJAsyncTcpCommunicateDogmaMethodType;
+};
 
 @interface HJAsyncTcpCommunicateDogma : NSObject
 
 - (HJAsyncTcpCommunicateDogmaMethodType)methodType;
 
-- (NSUInteger)lengthOfHeaderFromStream:(unsigned char *)stream streamLength:(NSUInteger)streamLength appendedLength:(NSUInteger)appendedLength;
-- (id)headerObjectFromHeaderStream:(unsigned char *)stream streamLength:(NSUInteger)streamLength;
-- (BOOL)isBrokenHeaderObject:(id)headerObject;
+- (NSUInteger)lengthOfHeaderFromStream:(unsigned char * _Nullable)stream streamLength:(NSUInteger)streamLength appendedLength:(NSUInteger)appendedLength;
+- (id _Nullable)headerObjectFromHeaderStream:(unsigned char * _Nullable)stream streamLength:(NSUInteger)streamLength;
+- (BOOL)isBrokenHeaderObject:(id _Nullable)headerObject;
 
-- (NSUInteger)lengthOfBodyFromStream:(unsigned char *)stream streamLength:(NSUInteger)streamLength appendedLength:(NSUInteger)appendedLength;
-- (NSUInteger)lengthOfBodyFromHeaderObject:(id)headerObject;
-- (id)bodyObjectFromBodyStream:(unsigned char *)stream streamLength:(NSUInteger)streamLength headerObject:(id)headerObject;
-- (BOOL)isBrokenBodyObject:(id)bodyObject;
+- (NSUInteger)lengthOfBodyFromStream:(unsigned char * _Nullable)stream streamLength:(NSUInteger)streamLength appendedLength:(NSUInteger)appendedLength;
+- (NSUInteger)lengthOfBodyFromHeaderObject:(id _Nullable)headerObject;
+- (id _Nullable)bodyObjectFromBodyStream:(unsigned char * _Nullable)stream streamLength:(NSUInteger)streamLength headerObject:(id _Nullable)headerObject;
+- (BOOL)isBrokenBodyObject:(id _Nullable)bodyObject;
 
-- (NSUInteger)lengthOfHeaderFromHeaderObject:(id)headerObject;
-- (NSUInteger)lengthOfBodyFromBodyObject:(id)bodyObject;
-- (NSUInteger)writeBuffer:(unsigned char *)writeBuffer bufferLength:(NSUInteger)bufferLength fromHeaderObject:(id)headerObject bodyObject:(id)bodyObject;
+- (NSUInteger)lengthOfHeaderFromHeaderObject:(id _Nullable)headerObject;
+- (NSUInteger)lengthOfBodyFromBodyObject:(id _Nullable)bodyObject;
+- (NSUInteger)writeBuffer:(unsigned char * _Nullable)writeBuffer bufferLength:(NSUInteger)bufferLength fromHeaderObject:(id _Nullable)headerObject bodyObject:(id _Nullable)bodyObject;
 
 @end
