@@ -13,7 +13,8 @@
 
 @interface HJAsyncTcpCommunicator ()
 {
-    NSMutableDictionary *_serverAddressForName;
+    NSMutableDictionary             *_serverAddressForName;
+    HJAsyncTcpCommunicateExecutor   *_executor;
 }
 @end
 
@@ -34,10 +35,12 @@
     if( (_serverAddressForName = [NSMutableDictionary new]) == nil ) {
         return NO;
     }
-    if( [self addExecuter:[[HJAsyncTcpCommunicateExecutor alloc] init]] == NO ) {
+    if( (_executor = [[HJAsyncTcpCommunicateExecutor alloc] init]) == nil ) {
         return NO;
     }
-    
+    if( [self addExecuter:_executor] == NO ) {
+        return NO;
+    }
     return YES;
 }
 
@@ -147,9 +150,14 @@
     [self pushQuery:query];
 }
 
-- (void)isConnectedWithServerKey:(NSString *)key completion:(void(^)(BOOL))completion
+- (BOOL)isConnectedWithServerKey:(NSString * _Nullable)key
 {
-    ;
+    if( key.length <= 0) {
+        return NO;
+    }
+    NSString *serverAddress = _serverAddressForName[key][0];
+    NSNumber *serverPort = _serverAddressForName[key][0];
+    return [_executor haveSockfdForServerAddress:serverAddress withPort:serverPort.unsignedIntegerValue];
 }
 
 @end

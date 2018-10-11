@@ -63,6 +63,19 @@
     return @"HJAyncTcpCommunicator's executor for handling transfer based on TCP/IP.";
 }
 
+- (BOOL)haveSockfdForServerAddress:(NSString *)address withPort:(NSUInteger)port
+{
+    if( address.length <= 0 ) {
+        return NO;
+    }
+    BOOL have = NO;
+    NSString *addressKey = [self addressKeyFromServerAddress:address serverPort:port];
+    @synchronized(self) {
+        have = (_socketForAddress[addressKey] != nil);
+    }
+    return have;
+}
+
 - (BOOL)calledExecutingWithQuery:(id)anQuery
 {
     HJAsyncTcpCommunicateExecutorOperation operation = (HJAsyncTcpCommunicateExecutorOperation)[[anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyOperation] integerValue];

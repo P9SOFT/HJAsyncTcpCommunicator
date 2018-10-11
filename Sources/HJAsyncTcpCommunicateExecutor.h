@@ -60,4 +60,6 @@ typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateExecutorStatus)
 
 @interface HJAsyncTcpCommunicateExecutor : HYExecuter
 
+- (BOOL)haveSockfdForServerAddress:(NSString *)address withPort:(NSUInteger)port;
+
 @end
