@@ -11,20 +11,18 @@ import UIKit
 
 class ViewController: UIViewController {
     
+    let serverKey = "test"
+    
     @IBOutlet var serverAddressTextField: UITextField!
     @IBOutlet var sendTextField: UITextField!
     @IBOutlet var headerTextView: UITextView!
     @IBOutlet var bodyTextView: UITextView!
     @IBOutlet var connectButton: UIButton!
-    var communicator:HJAsyncTcpCommunicator?
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         self.automaticallyAdjustsScrollViewInsets = false;
-        
-        // get the HYAsyncTcpCommunicator from the hydra
-        communicator = Hydra.default().worker(forName: HJAsyncTcpCommunicatorName) as? HJAsyncTcpCommunicator
     }
     
     override func didReceiveMemoryWarning() {
@@ -34,36 +32,27 @@ class ViewController: UIViewController {
     
     @IBAction func connectButtonTouchUpInside(_ sender:AnyObject) {
         
-        guard let communicator = communicator else { return }
+        if serverAddressTextField.isFirstResponder == true {
+            serverAddressTextField.resignFirstResponder()
+        }
+        if sendTextField.isFirstResponder == true {
+            sendTextField.resignFirstResponder()
+        }
         
         if connectButton.title(for: UIControlState()) == "Connect" {
-            if serverAddressTextField.text!.characters.count > 0 {
+            if let serverAddress = serverAddressTextField.text, serverAddress.count > 0 {
                 self.connectButton.isEnabled = false
                 // get server address and port from input string format like "http://www.p9soft.com:80", "www.p9soft.com:80", "www.p9soft.com"
-                let addressAndPort = self.addressAndPortPairFromString(serverAddressTextField.text!)
-                // set key to given server address and port and in this case "dummy".
-                communicator.setServerAddress(addressAndPort.address, port:UInt(addressAndPort.port), forKey:"dummy")
+                let addressAndPort = self.addressAndPortPairFromString(serverAddress)
+                // set key to given server address and port
+                HJAsyncTcpCommunicateManager.default().setServerAddress(addressAndPort.address, port:addressAndPort.port as NSNumber, forKey:serverKey)
                 // request connect and regist each handlers.
-                
-                communicator.connect(toServerKey: "dummy", timeout: 3.5, dogma: SimpleHttpDogma(), receiveHandler: { (flag:Bool, headerObject:Any?, bodyObject:Any?) in
-                    if flag == true { // receive ok
-                        self.headerTextView.text = String(headerObject as! NSString)
-                        self.bodyTextView.text = String(bodyObject as! NSString)
-                    } else { // receive failed
-                        self.showAlert("Receive Failed", completion:nil)
-                    }
-                }, disconnectHandler: { (flag:Bool) in
-                    if flag == true { // disconnect ok
-                        self.showAlert("Disconnected", completion: { () -> Void in
-                            self.connectButton.setTitle("Connect", for:UIControlState())
-                        })
-                    }
-                }, completion: { (flag:Bool) in
+                HJAsyncTcpCommunicateManager.default().connect(toServerKey: serverKey, timeout: 3.0, dogma: SimpleHttpDogma(), connectHandler: { (flag, headerObject, bodyObject) in
                     if flag == true { // connect ok
                         self.connectButton.setTitle("Disconnect", for:UIControlState())
                         self.connectButton.isEnabled = true
                         self.showAlert("Connected", completion: { () -> Void in
-                            if self.sendTextField.text!.characters.count == 0 {
+                            if (self.sendTextField.text?.count ?? 0) == 0 {
                                 self.sendTextField.text = "GET /index.html HTTP/1.1"
                             }
                         })
@@ -71,29 +60,50 @@ class ViewController: UIViewController {
                         self.connectButton.isEnabled = true
                         self.showAlert("Connect Failed", completion:nil)
                     }
+                }, receiveHandler: { (flag, headerObject, bodyObject) in
+                    if flag == true { // receive ok
+                        self.headerTextView.text = String(headerObject as! NSString)
+                        self.bodyTextView.text = String(bodyObject as! NSString)
+                    } else { // receive failed
+                        self.showAlert("Receive Failed", completion:nil)
+                    }
+                }, disconnect: { (flag, headerObject, bodyObject) in
+                    if flag == true { // disconnect ok
+                        self.showAlert("Disconnected", completion: { () -> Void in
+                            self.connectButton.setTitle("Connect", for:UIControlState())
+                        })
+                    }
                 })
+            } else {
+                showAlert("Fill Server Address", completion: nil)
             }
         } else {
             // request disconnect.
-            communicator.disconnect(fromServerKey: "dummy")
+            HJAsyncTcpCommunicateManager.default().disconnect(fromServerKey: serverKey)
         }
     }
     
     @IBAction func sendButtonTouchUpInside(_ sender:AnyObject) {
         
-        guard let communicator = communicator else { return }
-        
-        var sendText = sendTextField.text
-        if sendText?.characters.count == 0 {
+        guard var headerObject = sendTextField.text, headerObject.count > 0 else {
+            showAlert("Fill Send Text", completion:nil)
             return
         }
-        sendText! += "\r\n\r\n"
+        headerObject += "\r\n\r\n"
+        
+        if serverAddressTextField.isFirstResponder == true {
+            serverAddressTextField.resignFirstResponder()
+        }
+        if sendTextField.isFirstResponder == true {
+            sendTextField.resignFirstResponder()
+        }
+        
         // send
-        communicator.write(toServerKey: "dummy", headerObject:sendText, bodyObject:nil, completion: { (flag:Bool) -> Void in
+        HJAsyncTcpCommunicateManager.default().sendHeaderObject(headerObject, bodyObject: nil, toServerKey: serverKey) { (flag, headerObject, bodyObject) in
             if flag == false { // send failed
-                self.showAlert("Not Connected", completion:nil)
+                self.showAlert("Send Failed", completion:nil)
             }
-        })
+        }
     }
     
     func addressAndPortPairFromString(_ inputString:String) -> (address:String, port:Int) {
@@ -109,7 +119,6 @@ class ViewController: UIViewController {
             serverAddress = addressAndPortPair[0]
             serverPort = Int(addressAndPortPair[1])!
         }
-        
         return (serverAddress, serverPort)
     }
     

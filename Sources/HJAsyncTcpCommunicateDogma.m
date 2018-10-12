@@ -31,7 +31,6 @@
     if( [headerObject isKindOfClass:[NSData class]] == NO ) {
         return YES;
     }
-    
     return NO;
 }
 
@@ -50,7 +49,6 @@
     if( (stream == NULL) || (streamLength <= 0) ) {
         return nil;
     }
-    
     return [NSData dataWithBytes:stream length:streamLength];
 }
 
@@ -59,7 +57,6 @@
     if( [bodyObject isKindOfClass:[NSData class]] == NO ) {
         return YES;
     }
-    
     return NO;
 }
 
@@ -68,7 +65,6 @@
     if( [headerObject isKindOfClass:[NSData class]] == NO ) {
         return 0;
     }
-    
     return [headerObject lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
 }
 
@@ -77,7 +73,6 @@
     if( [bodyObject isKindOfClass:[NSData class]] == NO ) {
         return 0;
     }
-    
     return [bodyObject lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
 }
 
@@ -86,14 +81,12 @@
     if( (writeBuffer == NULL) || (bufferLength == 0) || ([headerObject isKindOfClass:[NSData class]] == NO) || ([bodyObject isKindOfClass:[NSData class]] == NO) ) {
         return 0;
     }
-    
     NSUInteger headerLength = [self lengthOfHeaderFromHeaderObject:headerObject];
     NSUInteger bodyLength = [self lengthOfBodyFromBodyObject:bodyObject];
     NSUInteger amountLength = headerLength + bodyLength;
     if( (amountLength == 0) || (amountLength > bufferLength) ) {
         return 0;
     }
-    
     unsigned char *plook = writeBuffer;
     if( headerLength > 0 ) {
         memcpy(plook, (unsigned char *)[headerObject bytes], headerLength);
@@ -102,7 +95,6 @@
     if( bodyLength > 0 ) {
         memcpy(plook, (unsigned char *)[bodyObject bytes], bodyLength);
     }
-    
     return amountLength;
 }
 
