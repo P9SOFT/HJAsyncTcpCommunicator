@@ -7,7 +7,6 @@
 //
 //  Licensed under the MIT license.
 
-#import "HJAsyncTcpCommunicateExecutor.h"
 #import "HJAsyncTcpCommunicateManager.h"
 
 @interface HJAsyncTcpCommunicateManager ()
@@ -62,7 +61,48 @@
 
 - (NSMutableDictionary *)executorHandlerWithResult:(HYResult *)result
 {
-    return nil;
+    NSString *key = [result parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyServerKey];
+    if( key.length == 0 ) {
+        return nil;
+    }
+    HJAsyncTcpCommunicateExecutorOperation operation = (HJAsyncTcpCommunicateExecutorOperation)[[result parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyOperation] integerValue];
+    HJAsyncTcpCommunicateExecutorEvent event = (HJAsyncTcpCommunicateExecutorEvent)[[result parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyEvent] integerValue];
+    id headerObject = [result parameterForKey:HJAsyncTcpCommunicateManagerParameterKeyHeaderObject];
+    id bodyObject = [result parameterForKey:HJAsyncTcpCommunicateManagerParameterKeyBodyObject];
+    NSMutableDictionary *paramDict = [[NSMutableDictionary alloc] init];
+    
+    paramDict[HJAsyncTcpCommunicateManagerParameterKeyServerKey] = key;
+    paramDict[HJAsyncTcpCommunicateManagerParameterKeyReferenceResult] = result;
+    
+    switch( operation ) {
+        case HJAsyncTcpCommunicateExecutorOperationConnect :
+            paramDict[HJAsyncTcpCommunicateManagerParameterKeyEvent] = (event == HJAsyncTcpCommunicateExecutorEventConnected) ? @(HJAsyncTcpCommunicateManagerEventConnected) : @(HJAsyncTcpCommunicateManagerEventConnectFailed);
+            break;
+        case HJAsyncTcpCommunicateExecutorOperationDisconnect :
+            paramDict[HJAsyncTcpCommunicateManagerParameterKeyEvent] = @(HJAsyncTcpCommunicateManagerEventDisconnected);
+            break;
+        case HJAsyncTcpCommunicateExecutorOperationSend :
+            paramDict[HJAsyncTcpCommunicateManagerParameterKeyEvent] = (event == HJAsyncTcpCommunicateExecutorEventSent) ? @(HJAsyncTcpCommunicateManagerEventSent) : @(HJAsyncTcpCommunicateManagerEventSendFailed);
+            break;
+        case HJAsyncTcpCommunicateExecutorOperationReceive :
+            paramDict[HJAsyncTcpCommunicateManagerParameterKeyEvent] = @(HJAsyncTcpCommunicateManagerEventReceived);
+            if( headerObject != nil ) {
+                paramDict[HJAsyncTcpCommunicateManagerParameterKeyHeaderObject] = headerObject;
+            }
+            if( bodyObject != nil ) {
+                paramDict[HJAsyncTcpCommunicateManagerParameterKeyBodyObject] = bodyObject;
+            }
+            break;
+        default :
+            [paramDict removeAllObjects];
+            break;
+    }
+    
+    if( paramDict.count == 0 ) {
+        return nil;
+    }
+    
+    return paramDict;
 }
 
 - (void)setServerAddress:(NSString *)address port:(NSNumber *)port forKey:(NSString *)key
@@ -146,6 +186,7 @@
     }
     HYQuery *query = [HYQuery queryWithWorkerName:_workerName executerName: HJAsyncTcpCommunicateExecutorName];
     [query setParameter:@((NSInteger)HJAsyncTcpCommunicateExecutorOperationConnect) forKey:HJAsyncTcpCommunicateExecutorParameterKeyOperation];
+    [query setParameter:key forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerKey];
     [query setParameter:pair forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerAddressPortPair];
     [query setParameter:@(timeout) forKey:HJAsyncTcpCommunicateExecutorParameterKeyTimeout];
     [query setParameter:dogma forKey:HJAsyncTcpCommunicateExecutorParameterKeyDogma];
@@ -173,6 +214,7 @@
     }
     HYQuery *query = [HYQuery queryWithWorkerName:_workerName executerName:HJAsyncTcpCommunicateExecutorName];
     [query setParameter:@((NSInteger)HJAsyncTcpCommunicateExecutorOperationSend) forKey: HJAsyncTcpCommunicateExecutorParameterKeyOperation];
+    [query setParameter:key forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerKey];
     [query setParameter:pair forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerAddressPortPair];
     [query setParameter:headerObject forKey:HJAsyncTcpCommunicateExecutorParameterKeyHeaderObject];
     [query setParameter:bodyObject forKey:HJAsyncTcpCommunicateExecutorParameterKeyBodyObject];
@@ -198,6 +240,7 @@
     }
     HYQuery *query = [HYQuery queryWithWorkerName:_workerName executerName:HJAsyncTcpCommunicateExecutorName];
     [query setParameter:@((NSInteger)HJAsyncTcpCommunicateExecutorOperationDisconnect) forKey:HJAsyncTcpCommunicateExecutorParameterKeyOperation];
+    [query setParameter:key forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerKey];
     [query setParameter:pair forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerAddressPortPair];
     [query setParameter:completion forKey:HJAsyncTcpCommunicateExecutorParameterKeyCompletionHandler];
     [[Hydra defaultHydra] pushQuery:query];

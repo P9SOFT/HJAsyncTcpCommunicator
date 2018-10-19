@@ -18,13 +18,15 @@
 #define     HJAsyncTcpCommunicateExecutorName                           @"HJAsyncTcpCommunicateExecutorName"
 
 #define     HJAsyncTcpCommunicateExecutorParameterKeyOperation              @"HJAsyncTcpCommunicateExecutorParameterKeyOperation"
-#define     HJAsyncTcpCommunicateExecutorParameterKeyStatus                 @"HJAsyncTcpCommunicateExecutorParameterKeyStatus"
+#define     HJAsyncTcpCommunicateExecutorParameterKeyEvent                  @"HJAsyncTcpCommunicateExecutorParameterKeyEvent"
+#define     HJAsyncTcpCommunicateExecutorParameterKeyServerKey              @"HJAsyncTcpCommunicateExecutorParameterKeyServerKey"
 #define     HJAsyncTcpCommunicateExecutorParameterKeyServerAddressPortPair  @"HJAsyncTcpCommunicateExecutorParameterKeyServerAddressPortPair"
 #define     HJAsyncTcpCommunicateExecutorParameterKeyTimeout                @"HJAsyncTcpCommunicateExecutorParameterKeyTimeout"
 #define     HJAsyncTcpCommunicateExecutorParameterKeySockfd                 @"HJAsyncTcpCommunicateExecutorParameterKeySockfd"
 #define     HJAsyncTcpCommunicateExecutorParameterKeyDogma                  @"HJAsyncTcpCommunicateExecutorParameterKeyDogma"
 #define     HJAsyncTcpCommunicateExecutorParameterKeyHeaderObject           @"HJAsyncTcpCommunicateExecutorParameterKeyHeaderObject"
 #define     HJAsyncTcpCommunicateExecutorParameterKeyBodyObject             @"HJAsyncTcpCommunicateExecutorParameterKeyBodyObject"
+#define     HJAsyncTcpCommunicateExecutorParameterKeyUnintended             @"HJAsyncTcpCommunicateExecutorParameterKeyUnintended"
 #define     HJAsyncTcpCommunicateExecutorParameterKeyConnectHandler         @"HJAsyncTcpCommunicateExecutorParameterKeyConnectHandler"
 #define     HJAsyncTcpCommunicateExecutorParameterKeyReceiveHandler         @"HJAsyncTcpCommunicateExecutorParameterKeyReceiveHandler"
 #define     HJAsyncTcpCommunicateExecutorParameterKeyDisconnectHandler      @"HJAsyncTcpCommunicateExecutorParameterKeyDisconnectHandler"
@@ -35,26 +37,26 @@ typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateExecutorOperation)
     HJAsyncTcpCommunicateExecutorOperationDummy,
     HJAsyncTcpCommunicateExecutorOperationConnect,
     HJAsyncTcpCommunicateExecutorOperationDisconnect,
-    HJAsyncTcpCommunicateExecutorOperationDisconnected,
     HJAsyncTcpCommunicateExecutorOperationSend,
     HJAsyncTcpCommunicateExecutorOperationReceive
 };
 
-typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateExecutorStatus)
+typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateExecutorEvent)
 {
-    HJAsyncTcpCommunicateExecutorStatusDummy,
-    HJAsyncTcpCommunicateExecutorStatusSucceed,
-    HJAsyncTcpCommunicateExecutorStatusBrokenPacket,
-    HJAsyncTcpCommunicateExecutorStatusUnknownOperation,
-    HJAsyncTcpCommunicateExecutorStatusInvalidParameter,
-    HJAsyncTcpCommunicateExecutorStatusInvalidServerAddress,
-    HJAsyncTcpCommunicateExecutorStatusAlreadyConnected,
-    HJAsyncTcpCommunicateExecutorStatusNotConnected,
-    HJAsyncTcpCommunicateExecutorStatusNetworkError,
-    HJAsyncTcpCommunicateExecutorStatusInternalError,
-    HJAsyncTcpCommunicateExecutorStatusCanceled,
-    HJAsyncTcpCommunicateExecutorStatusExpired,
-    HJAsyncTcpCommunicateExecutorStatusError
+    HJAsyncTcpCommunicateExecutorEventDummy,
+    HJAsyncTcpCommunicateExecutorEventConnected,
+    HJAsyncTcpCommunicateExecutorEventReceived,
+    HJAsyncTcpCommunicateExecutorEventSent,
+    HJAsyncTcpCommunicateExecutorEventDisconnected,
+    HJAsyncTcpCommunicateExecutorEventUnknownOperation,
+    HJAsyncTcpCommunicateExecutorEventInvalidParameter,
+    HJAsyncTcpCommunicateExecutorEventEmptyData,
+    HJAsyncTcpCommunicateExecutorEventInvalidServerAddress,
+    HJAsyncTcpCommunicateExecutorEventAlreadyConnected,
+    HJAsyncTcpCommunicateExecutorEventNetworkError,
+    HJAsyncTcpCommunicateExecutorEventInternalError,
+    HJAsyncTcpCommunicateExecutorEventCanceled,
+    HJAsyncTcpCommunicateExecutorEventExpired
 };
 
 @interface HJAsyncTcpCommunicateExecutor : HYExecuter

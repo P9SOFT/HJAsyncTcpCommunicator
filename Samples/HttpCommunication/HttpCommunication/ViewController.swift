@@ -23,6 +23,8 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         
         self.automaticallyAdjustsScrollViewInsets = false;
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(self.tcpCommunicateManagerHandler(notification:)), name: NSNotification.Name(rawValue: HJAsyncTcpCommunicateManagerNotification), object: nil)
     }
     
     override func didReceiveMemoryWarning() {
@@ -127,6 +129,30 @@ class ViewController: UIViewController {
         let alert = UIAlertController(title:"Alert", message:message, preferredStyle:UIAlertControllerStyle.alert)
         alert.addAction(UIAlertAction(title:"OK", style:UIAlertActionStyle.default, handler:nil))
         self.present(alert, animated:true, completion:completion)
+    }
+    
+    func tcpCommunicateManagerHandler(notification:Notification) {
+        
+        guard let userInfo = notification.userInfo, let key = userInfo[HJAsyncTcpCommunicateManagerParameterKeyServerKey] as? String, let event = userInfo[HJAsyncTcpCommunicateManagerParameterKeyEvent] as? Int else {
+            return
+        }
+        
+        if key == serverKey, let event = HJAsyncTcpCommunicateManagerEvent(rawValue: event) {
+            switch event {
+            case .connected:
+                print("- server \(key) connected.")
+            case .disconnected:
+                print("- server \(key) disconnected.")
+            case .sent:
+                print("- server \(key) sent.")
+            case .sendFailed:
+                print("- server \(key) send failed.")
+            case .received:
+                print("- server \(key) received.")
+            default:
+                break
+            }
+        }
     }
 }
 

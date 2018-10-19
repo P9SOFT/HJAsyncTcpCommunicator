@@ -10,8 +10,26 @@
 @import Foundation;
 #import <Hydra/Hydra.h>
 #import "HJAsyncTcpCommunicateDogma.h"
+#import "HJAsyncTcpCommunicateExecutor.h"
 
 #define     HJAsyncTcpCommunicateManagerNotification    @"HJAsyncTcpCommunicateManagerNotification"
+
+#define     HJAsyncTcpCommunicateManagerParameterKeyServerKey       @"HJAsyncTcpCommunicateManagerParameterKeyServerKey"
+#define     HJAsyncTcpCommunicateManagerParameterKeyEvent           @"HJAsyncTcpCommunicateManagerParameterKeyEvent"
+#define     HJAsyncTcpCommunicateManagerParameterKeyHeaderObject    @"HJAsyncTcpCommunicateManagerParameterKeyHeaderObject"
+#define     HJAsyncTcpCommunicateManagerParameterKeyBodyObject      @"HJAsyncTcpCommunicateManagerParameterKeyBodyObject"
+#define     HJAsyncTcpCommunicateManagerParameterKeyReferenceResult @"HJAsyncTcpCommunicateManagerParameterKeyReferenceResult"
+
+typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateManagerEvent)
+{
+    HJAsyncTcpCommunicateManagerEventDummy,
+    HJAsyncTcpCommunicateManagerEventConnected,
+    HJAsyncTcpCommunicateManagerEventConnectFailed,
+    HJAsyncTcpCommunicateManagerEventDisconnected,
+    HJAsyncTcpCommunicateManagerEventSent,
+    HJAsyncTcpCommunicateManagerEventSendFailed,
+    HJAsyncTcpCommunicateManagerEventReceived
+};
 
 @interface HJAsyncTcpCommunicateManager : HYManager
 
