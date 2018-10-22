@@ -42,11 +42,11 @@ typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateManagerEvent)
 - (NSNumber * _Nullable)serverPortForKey:(NSString * _Nonnull)key;
 - (void)removeServerForKey:(NSString * _Nonnull)key;
 - (void)removeAllServers;
+- (BOOL)isConnectingForServerKey:(NSString * _Nonnull)key;
 
 - (void)connectToServerKey:(NSString * _Nonnull)key timeout:(NSTimeInterval)timeout dogma:(id _Nonnull)dogma connectHandler:(HJAsyncTcpCommunicatorHandler _Nullable)connectHandler receiveHandler:(HJAsyncTcpCommunicatorHandler _Nullable)receiveHandler disconnect:(HJAsyncTcpCommunicatorHandler _Nullable)disconnectHandler;
 - (void)sendHeaderObject:(id _Nullable)headerObject bodyObject:(id _Nullable)bodyObject toServerKey:(NSString * _Nonnull)key completion:(HJAsyncTcpCommunicatorHandler _Nullable)completion;
-- (void)disconnectFromServerKey:(NSString * _Nonnull)key completion:(HJAsyncTcpCommunicatorHandler _Nullable)completion;
-- (BOOL)isConnectdForServerKey:(NSString * _Nonnull)key;
+- (void)disconnectFromServerKey:(NSString * _Nonnull)key;
 
 @property (nonatomic, readonly) BOOL standby;
 

@@ -153,7 +153,7 @@
         return;
     }
     @synchronized(self) {
-        [self disconnectFromServerKey:key completion:nil];
+        [self disconnectFromServerKey:key];
         [_servers removeObjectForKey:key];
     }
 }
@@ -162,10 +162,24 @@
 {
     @synchronized(self) {
         for( NSString *key in _servers ) {
-            [self disconnectFromServerKey:key completion:nil];
+            [self disconnectFromServerKey:key];
         }
         [_servers removeAllObjects];
     }
+}
+
+- (BOOL)isConnectingForServerKey:(NSString *)key
+{
+    NSArray *pair = nil;
+    if( (self.standby == YES) && (key.length > 0) ) {
+        @synchronized(self) {
+            pair = _servers[key];
+        }
+    }
+    if( pair == nil ) {
+        return NO;
+    }
+    return [_executor haveSockfdForServerAddressPortPair:pair];
 }
 
 - (void)connectToServerKey:(NSString * _Nonnull)key timeout:(NSTimeInterval)timeout dogma:(id _Nonnull)dogma connectHandler:(HJAsyncTcpCommunicatorHandler _Nullable)connectHandler receiveHandler:(HJAsyncTcpCommunicatorHandler _Nullable)receiveHandler disconnect:(HJAsyncTcpCommunicatorHandler _Nullable)disconnectHandler
@@ -222,7 +236,7 @@
     [[Hydra defaultHydra] pushQuery:query];
 }
 
-- (void)disconnectFromServerKey:(NSString *)key completion:(HJAsyncTcpCommunicatorHandler)completion
+- (void)disconnectFromServerKey:(NSString * _Nonnull)key
 {
     NSArray *pair = nil;
     if( (self.standby == YES) && (key.length > 0) ) {
@@ -231,33 +245,13 @@
         }
     }
     if( pair == nil ) {
-        if( completion != nil ) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                completion(NO, nil, nil);
-            });
-        }
         return;
     }
     HYQuery *query = [HYQuery queryWithWorkerName:_workerName executerName:HJAsyncTcpCommunicateExecutorName];
     [query setParameter:@((NSInteger)HJAsyncTcpCommunicateExecutorOperationDisconnect) forKey:HJAsyncTcpCommunicateExecutorParameterKeyOperation];
     [query setParameter:key forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerKey];
     [query setParameter:pair forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerAddressPortPair];
-    [query setParameter:completion forKey:HJAsyncTcpCommunicateExecutorParameterKeyCompletionHandler];
     [[Hydra defaultHydra] pushQuery:query];
-}
-
-- (BOOL)isConnectdForServerKey:(NSString *)key
-{
-    NSArray *pair = nil;
-    if( (self.standby == YES) && (key.length > 0) ) {
-        @synchronized(self) {
-            pair = _servers[key];
-        }
-    }
-    if( pair == nil ) {
-        return NO;
-    }
-    return [_executor haveSockfdForServerAddressPortPair:pair];
 }
 
 @end
