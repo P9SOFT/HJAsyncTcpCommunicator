@@ -16,10 +16,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         
-        // add the HJAsyncTcpCommunicator to the hydra
-        if( Hydra.default().addWorker(HJAsyncTcpCommunicator()) == false ) {
-            return false
-        }
+        // add a worker to hydra
+        Hydra.default().addCommonWorker()
+        
+        // stanby HJAsyncTcpCommunicator with worker and bind to hydra
+        HJAsyncTcpCommunicateManager.default().standby(withWorkerName: HydraCommonWorkerName)
+        HJAsyncTcpCommunicateManager.default().bind(toHydra: Hydra.default())
+        
         // start the hydra
         Hydra.default().startAllWorkers()
         

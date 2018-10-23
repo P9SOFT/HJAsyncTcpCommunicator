@@ -17,6 +17,8 @@ typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateDogmaMethodType)
     
 };
 
+typedef void(^HJAsyncTcpCommunicatorHandler)(BOOL, id _Nullable , id _Nullable);
+
 @interface HJAsyncTcpCommunicateDogma : NSObject
 
 - (HJAsyncTcpCommunicateDogmaMethodType)methodType;
