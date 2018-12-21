@@ -47,7 +47,7 @@ class ViewController: UIViewController {
                 // get server address and port from input string format like "http://www.p9soft.com:80", "www.p9soft.com:80", "www.p9soft.com"
                 let addressAndPort = self.addressAndPortPairFromString(serverAddress)
                 // set key to given server address and port
-                HJAsyncTcpCommunicateManager.default().setServerAddress(addressAndPort.address, port:addressAndPort.port as NSNumber, forKey:serverKey)
+                HJAsyncTcpCommunicateManager.default().setServerAddress(addressAndPort.address, port: addressAndPort.port as NSNumber, parameters: nil, forKey: serverKey)
                 // request connect and regist each handlers.
                 HJAsyncTcpCommunicateManager.default().connect(toServerKey: serverKey, timeout: 3.0, dogma: SimpleHttpDogma(), connectHandler: { (flag, headerObject, bodyObject) in
                     if flag == true { // connect ok
@@ -72,6 +72,7 @@ class ViewController: UIViewController {
                 }, disconnect: { (flag, headerObject, bodyObject) in
                     if flag == true { // disconnect ok
                         self.showAlert("Disconnected", completion: { () -> Void in
+                            self.connectButton.isEnabled = true
                             self.connectButton.setTitle("Connect", for:UIControlState())
                         })
                     }
@@ -81,7 +82,7 @@ class ViewController: UIViewController {
             }
         } else {
             // request disconnect.
-            HJAsyncTcpCommunicateManager.default().disconnect(fromServerKey: serverKey)
+            HJAsyncTcpCommunicateManager.default().disconnectFromServer(forKey: serverKey)
         }
     }
     

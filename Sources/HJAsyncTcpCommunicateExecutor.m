@@ -12,20 +12,20 @@
 
 #define kDefaultBufferSize  8192
 
+@implementation HJAsyncTcpServerInfo
+@end
+
 @interface HJAsyncTcpCommunicateExecutor ()
 {
     NSMutableDictionary *_dogmas;
     NSMutableDictionary *_sockets;
-    NSMutableDictionary *_addressForSocket;
+    NSMutableDictionary *_serverInfos;
     unsigned char       *_writeBuffer;
     NSUInteger          _sizeOfWriteBuffer;
 }
 
 - (HYResult *)resultForQuery:(id)anQuery withEvent:(HJAsyncTcpCommunicateExecutorEvent)event;
 - (void)pushQueryForWithOperation:(HJAsyncTcpCommunicateExecutorOperation)operation header:(id)headerObject body:(id)bodyObject anQuery:(id)anQyery;
-- (NSString *)addressKeyFromServerAddress:(NSString *)serverAddress serverPort:(NSNumber *)serverPort;
-- (NSString *)serverAddressFromAddresKey:(NSString *)addressKey;
-- (NSNumber *)serverPortFromAddresKey:(NSString *)addressKey;
 - (void)storeResultWithEvent:(HJAsyncTcpCommunicateExecutorEvent)event query:(id)anQuery flag:(BOOL)flag completion:(HJAsyncTcpCommunicatorHandler)completion;
 - (void)connectWithQuery:(id)anQuery;
 - (void)sendWithQuery:(id)anQuery;
@@ -48,9 +48,10 @@
         if( (_sockets = [NSMutableDictionary new]) == nil ) {
             return nil;
         }
-        if( (_addressForSocket = [NSMutableDictionary new]) == nil ) {
+        if( (_serverInfos = [NSMutableDictionary new]) == nil ) {
             return nil;
         }
+        _readBuffSize = kDefaultBufferSize;
     }
     return self;
 }
@@ -65,18 +66,14 @@
     return @"HJAyncTcpCommunicator's executor for handling transfer based on TCP/IP.";
 }
 
-- (BOOL)haveSockfdForServerAddressPortPair:(NSArray *)pair
+- (BOOL)haveSockfdForServerKey:(NSString *)key
 {
-    if( pair.count != 2 ) {
-        return NO;
-    }
-    if( ([pair[0] isKindOfClass:[NSString class]] == NO) || ([pair[1] isKindOfClass:[NSNumber class]] == NO) ) {
+    if( key.length == 0 ) {
         return NO;
     }
     BOOL have = NO;
-    NSString *addressKey = [self addressKeyFromServerAddress:pair[0] serverPort:pair[1]];
     @synchronized(self) {
-        have = (_sockets[addressKey] != nil);
+        have = (_sockets[key] != nil);
     }
     return have;
 }
@@ -135,35 +132,6 @@
     [self.employedWorker pushQuery:query];
 }
 
-- (NSString *)addressKeyFromServerAddress:(NSString *)serverAddress serverPort:(NSNumber *)serverPort
-{
-    return [NSString stringWithFormat:@"%@:%ld", serverAddress, (unsigned long)serverPort.unsignedIntegerValue];
-}
-
-- (NSString *)serverAddressFromAddresKey:(NSString *)addressKey
-{
-    if( addressKey.length == 0 ) {
-        return nil;
-    }
-    NSArray *pair = [addressKey componentsSeparatedByString:@":"];
-    if( pair.count != 2 ) {
-        return nil;
-    }
-    return pair[0];
-}
-
-- (NSNumber *)serverPortFromAddresKey:(NSString *)addressKey
-{
-    if( addressKey.length == 0 ) {
-        return nil;
-    }
-    NSArray *pair = [addressKey componentsSeparatedByString:@":"];
-    if( pair.count != 2 ) {
-        return nil;
-    }
-    return @([pair[1] unsignedIntegerValue]);
-}
-
 - (void)storeResultWithEvent:(HJAsyncTcpCommunicateExecutorEvent)event query:(id)anQuery flag:(BOOL)flag completion:(HJAsyncTcpCommunicatorHandler)completion
 {
     if( completion != nil ) {
@@ -176,28 +144,24 @@
 
 - (void)connectWithQuery:(id)anQuery
 {
-    NSString *serverAddress = nil;
-    NSNumber *serverPort = nil;
-    NSString *key = [anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyServerKey];
-    NSArray *pair = [anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyServerAddressPortPair];
-    if( (key.length > 0) && (pair.count == 2) ) {
-        serverAddress = pair[0];
-        serverPort = pair[1];
-    }
-    NSTimeInterval timeout = (NSTimeInterval)[[anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyTimeout] doubleValue];
-    id dogma = [anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyDogma];
     HJAsyncTcpCommunicatorHandler connectHandler = [anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyConnectHandler];
-    if( (serverAddress == nil) || (serverPort == 0) || ([dogma isKindOfClass:[HJAsyncTcpCommunicateDogma class]] == NO) ) {
+    if( [[anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyDelayedConnectNotify] boolValue] == YES ) {
+        [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventConnected query:anQuery flag:YES completion:connectHandler];
+        return;
+    }
+    HJAsyncTcpServerInfo *info = [anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyServerInfo];
+    id dogma = [anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyDogma];
+    if( (info.address.length == 0) || (info.port.unsignedIntegerValue == 0) || ([dogma isKindOfClass:[HJAsyncTcpCommunicateDogma class]] == NO) ) {
         [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventInvalidParameter query:anQuery flag:NO completion:connectHandler];
         return;
     }
-    NSString *addressKey = [self addressKeyFromServerAddress:serverAddress serverPort:serverPort];
-    if( _sockets[addressKey] != nil ) {
+    NSString *key = [anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyServerKey];
+    if( _sockets[key] != nil ) {
         [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventAlreadyConnected query:anQuery flag:NO completion:connectHandler];
         return;
     }
     struct hostent *phostipref;
-    if( (phostipref = gethostbyname(serverAddress.UTF8String)) == NULL ) {
+    if( (phostipref = gethostbyname(info.address.UTF8String)) == NULL ) {
         [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventInvalidServerAddress query:anQuery flag:NO completion:connectHandler];
         return;
     }
@@ -216,7 +180,7 @@
     struct sockaddr_in servaddr;
     memset(&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons((in_port_t)serverPort.unsignedIntegerValue);
+    servaddr.sin_port = htons((in_port_t)info.port.unsignedIntegerValue);
     memcpy(&(servaddr.sin_addr), phostipref->h_addr, phostipref->h_length);
     if( connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0 ) {
         if( errno != EINPROGRESS ) {
@@ -226,6 +190,7 @@
         }
     }
     
+    NSTimeInterval timeout = (NSTimeInterval)[[anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyTimeout] doubleValue];
     fd_set rset, wset;
     FD_ZERO(&rset);
     FD_SET(sockfd, &rset);
@@ -250,82 +215,118 @@
         return;
     }
     
+    if( [dogma prepareAfterConnected] == NO ) {
+        close(sockfd);
+        [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventInternalError query:anQuery flag:NO completion:connectHandler];
+        return;
+    }
+    
     @synchronized(self) {
-        _dogmas[addressKey] = dogma;
-        _sockets[addressKey] = @(sockfd);
-        _addressForSocket[(@(sockfd)).stringValue] = addressKey;
+        _dogmas[key] = dogma;
+        _sockets[key] = @(sockfd);
+        _serverInfos[key] = info;
     }
     
     [anQuery setParameter:@(sockfd) forKey:HJAsyncTcpCommunicateExecutorParameterKeySockfd];
     
-    [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventConnected query:anQuery flag:YES completion:connectHandler];
+    if( [dogma needHandshake:anQuery] == NO ) {
+        [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventConnected query:anQuery flag:YES completion:connectHandler];
+    } else {
+        [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventInHandshaking query:anQuery flag:YES completion:nil];
+        id handshakeObject = [dogma firstHandshakeObjectAfterConnected:anQuery];
+        if( handshakeObject != nil ) {
+            [anQuery setParameter:handshakeObject forKey:HJAsyncTcpCommunicateExecutorParameterKeyHandshakeObject];
+            [self pushQueryForWithOperation:HJAsyncTcpCommunicateExecutorOperationSend header:handshakeObject body:nil anQuery:anQuery];
+        }
+    }
     
     [NSThread detachNewThreadSelector:@selector(reader:) toTarget:self withObject:anQuery];
 }
 
 - (void)sendWithQuery:(id)anQuery
 {
-    NSString *serverAddress = nil;
-    NSNumber *serverPort = nil;
-    NSArray *pair = [anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyServerAddressPortPair];
-    if( pair.count == 2) {
-        serverAddress = pair[0];
-        serverPort = pair[1];
-    }
-    id headerObject = [anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyHeaderObject];
-    id bodyObject = [anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyBodyObject];
-    HJAsyncTcpCommunicatorHandler completion = [anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyCompletionHandler];
-    
-    if( (serverAddress == nil) || (serverPort == nil) || ((headerObject == nil) && (bodyObject == nil)) ) {
-        [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventInvalidParameter query:anQuery flag:NO completion:completion];
-        return;
-    }
-    NSString *addressKey = [self addressKeyFromServerAddress:serverAddress serverPort:serverPort];
+    NSString *key = [anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyServerKey];
     id dogma = nil;
     NSNumber *sockfdNumber = nil;
     @synchronized(self) {
-        dogma = _dogmas[addressKey];
-        sockfdNumber = _sockets[addressKey];
+        dogma = _dogmas[key];
+        sockfdNumber = _sockets[key];
     }
+    HJAsyncTcpCommunicatorHandler completion = [anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyCompletionHandler];
     if( (dogma == nil) || (sockfdNumber.intValue == 0) ) {
         [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventInvalidParameter query:anQuery flag:NO completion:completion];
         return;
     }
-    
-    NSUInteger length = [dogma lengthOfHeaderFromHeaderObject:headerObject] + [dogma lengthOfBodyFromBodyObject:bodyObject];
+    BOOL inHandshaking = [dogma needHandshake:anQuery];
+    id headerObject = nil;
+    id bodyObject = nil;
+    NSUInteger length = 0;
+    if( inHandshaking == YES ) {
+        headerObject = [anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyHandshakeObject];
+        if( headerObject == nil ) {
+            [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventInvalidParameter query:anQuery flag:NO completion:completion];
+            return;
+        }
+        length = [dogma lengthOfHandshakeFromHandshakeObject:headerObject];
+    } else {
+        headerObject = [anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyHeaderObject];
+        bodyObject = [anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyBodyObject];
+        if( (headerObject == nil) && (bodyObject == nil) ) {
+            [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventInvalidParameter query:anQuery flag:NO completion:completion];
+            return;
+        }
+        length = [dogma lengthOfHeaderFromHeaderObject:headerObject] + [dogma lengthOfBodyFromBodyObject:bodyObject];
+    }
     if( length == 0 ) {
         [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventEmptyData query:anQuery flag:NO completion:completion];
         return;
     }
     
-    if( _writeBuffer == NULL ) {
-        if( (_writeBuffer = (unsigned char *)malloc((size_t)length)) != NULL ) {
-            _sizeOfWriteBuffer = length;
+    if( [dogma writeAtOnce] == YES ) {
+        if( _writeBuffer == NULL ) {
+            if( (_writeBuffer = (unsigned char *)malloc((size_t)length)) != NULL ) {
+                _sizeOfWriteBuffer = length;
+            }
+        } else {
+            if( length > _sizeOfWriteBuffer ) {
+                if( (_writeBuffer = (unsigned char *)realloc(_writeBuffer, (size_t)length)) != NULL ) {
+                    _sizeOfWriteBuffer = length;
+                }
+            }
+        }
+        if( _writeBuffer == NULL ) {
+            [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventInternalError query:anQuery flag:NO completion:completion];
+            return;
+        }
+        NSUInteger wbytes = [dogma writeBuffer:_writeBuffer bufferLength:length fromHeaderObject:headerObject bodyObject:bodyObject];
+        if( wbytes == 0 ) {
+            [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventEmptyData query:anQuery flag:NO completion:completion];
+            return;
+        }
+        if( (wbytes = (int)write(sockfdNumber.intValue, _writeBuffer, wbytes)) <= 0 ) {
+            [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventNetworkError query:anQuery flag:NO completion:completion];
+            return;
         }
     } else {
-        if( length > _sizeOfWriteBuffer ) {
-            if( (_writeBuffer = (unsigned char *)realloc(_writeBuffer, (size_t)length)) != NULL ) {
-                _sizeOfWriteBuffer = length;
+        NSArray *fragments = [dogma writeFragmentFromHeaderObject:headerObject bodyObject:bodyObject];
+        if( fragments.count == 0 ) {
+            [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventEmptyData query:anQuery flag:NO completion:completion];
+            return;
+        }
+        for( HJAsyncTcpCommunicateWriteFragment *fragment in fragments ) {
+            if( (fragment.fragmentBuffer != NULL) && (fragment.fragmentLength > 0) ) {
+                NSUInteger wbytes = (int)write(sockfdNumber.intValue, fragment.fragmentBuffer, fragment.fragmentLength);
+                if( wbytes != fragment.fragmentLength ) {
+                    [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventNetworkError query:anQuery flag:NO completion:completion];
+                    return;
+                }
             }
         }
     }
-    if( _writeBuffer == NULL ) {
-        [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventInternalError query:anQuery flag:NO completion:completion];
-        return;
-    }
     
-    NSUInteger wbytes = [dogma writeBuffer:_writeBuffer bufferLength:length fromHeaderObject:headerObject bodyObject:bodyObject];
-    if( wbytes == 0 ) {
-        [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventEmptyData query:anQuery flag:NO completion:completion];
-        return;
+    if( (inHandshaking == NO) && ([dogma isControlHeaderObject:headerObject] == NO) ) {
+        [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventSent query:anQuery flag:YES completion:completion];
     }
-    
-    if( (wbytes = (int)write(sockfdNumber.intValue, _writeBuffer, wbytes)) <= 0 ) {
-        [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventNetworkError query:anQuery flag:NO completion:completion];
-        return;
-    }
-    
-    [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventSent query:anQuery flag:YES completion:completion];
 }
 
 - (void)receiveWithQuery:(id)anQuery
@@ -339,21 +340,10 @@
         [self storeResult:[self resultForQuery:anQuery withEvent:HJAsyncTcpCommunicateExecutorEventDisconnected]];
         return;
     }
-    NSString *serverAddress = nil;
-    NSNumber *serverPort = nil;
-    NSArray *pair = [anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyServerAddressPortPair];
-    if( pair.count == 2) {
-        serverAddress = pair[0];
-        serverPort = pair[1];
-    }
-    if( (serverAddress == nil) || (serverPort == nil) ) {
-        [self storeResult:[self resultForQuery:anQuery withEvent:HJAsyncTcpCommunicateExecutorEventInvalidParameter]];
-        return;
-    }
-    NSString *addressKey = [self addressKeyFromServerAddress:serverAddress serverPort:serverPort];
+    NSString *key = [anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyServerKey];
     NSNumber *sockfd = nil;
     @synchronized(self) {
-        sockfd = _sockets[addressKey];
+        sockfd = _sockets[key];
     }
     if( sockfd == nil ) {
         [self storeResult:[self resultForQuery:anQuery withEvent:HJAsyncTcpCommunicateExecutorEventInvalidParameter]];
@@ -364,20 +354,13 @@
 
 - (void)reader:(id)anQuery
 {
-    NSString *serverAddress = nil;
-    NSNumber *serverPort = nil;
     NSString *key = [anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyServerKey];
-    NSArray *pair = [anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyServerAddressPortPair];
-    if( (key.length > 0) && (pair.count == 2) ) {
-        serverAddress = pair[0];
-        serverPort = pair[1];
-    }
     id dogma = [anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyDogma];
     int sockfd = [[anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeySockfd] intValue];
     HJAsyncTcpCommunicatorHandler receiveHandler = [anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyReceiveHandler];
     HJAsyncTcpCommunicatorHandler disconnectHandler = [anQuery parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyDisconnectHandler];
     NSMutableData *receivedData = [[NSMutableData alloc] init];
-    unsigned char rbuff[kDefaultBufferSize];
+    unsigned char rbuff[self.readBuffSize];
     int rbytes = 0;
     BOOL gotBrokenPacket = NO;
     NSUInteger lengthOfHeader = 0;
@@ -387,39 +370,87 @@
     
     while( 1 ) {
         @autoreleasepool {
-            if( (rbytes = (int)read(sockfd, rbuff, kDefaultBufferSize)) <= 0 ) {
+            if( (rbytes = (int)read(sockfd, rbuff, self.readBuffSize)) <= 0 ) {
                 break;
             }
             [receivedData appendBytes:rbuff length:rbytes];
-            switch( [dogma methodType] ) {
-                case HJAsyncTcpCommunicateDogmaMethodTypeHeaderWithBody :
-                    while( receivedData.length > 0 ) {
-                        if( headerObject == nil ) {
-                            if( (lengthOfHeader = [dogma lengthOfHeaderFromStream:(unsigned char *)receivedData.bytes streamLength:receivedData.length appendedLength:(NSUInteger)rbytes]) == 0 ) {
-                                break;
+            if( [dogma needHandshake:anQuery] == YES ) {
+                if( headerObject == nil ) {
+                    if( (lengthOfHeader = [dogma lengthOfHandshakeFromStream:(unsigned char *)receivedData.bytes streamLength:receivedData.length appendedLength:(NSUInteger)rbytes]) == 0 ) {
+                        break;
+                    }
+                    headerObject = [dogma handshakeObjectFromHeaderStream:(unsigned char *)receivedData.bytes streamLength:lengthOfHeader];
+                    if( [dogma isBrokenHandshakeObject:headerObject] == YES ) {
+                        gotBrokenPacket = YES;
+                        break;
+                    }
+                    [receivedData replaceBytesInRange:NSMakeRange(0, lengthOfHeader) withBytes:NULL length:0];
+                    id handshakeObject = [dogma nextHandshakeObjectAfterUpdateHandshakeStatusFromObject:headerObject];
+                    if( handshakeObject != nil ) {
+                        [anQuery setParameter:handshakeObject forKey:HJAsyncTcpCommunicateExecutorParameterKeyHandshakeObject];
+                        [self pushQueryForWithOperation:HJAsyncTcpCommunicateExecutorOperationSend header:handshakeObject body:nil anQuery:anQuery];
+                    }
+                }
+                if( headerObject != nil ) {
+                    if( [dogma needHandshake:anQuery] == NO ) {
+                        [anQuery setParameter:@(1) forKey:HJAsyncTcpCommunicateExecutorParameterKeyDelayedConnectNotify];
+                        [self pushQueryForWithOperation:HJAsyncTcpCommunicateExecutorOperationConnect header:nil body:nil anQuery:anQuery];
+                    }
+                    headerObject = nil;
+                    bodyObject = nil;
+                }
+            } else {
+                switch( [dogma methodType] ) {
+                    case HJAsyncTcpCommunicateDogmaMethodTypeHeaderWithBody :
+                        while( receivedData.length > 0 ) {
+                            if( headerObject == nil ) {
+                                if( (lengthOfHeader = [dogma lengthOfHeaderFromStream:(unsigned char *)receivedData.bytes streamLength:receivedData.length appendedLength:(NSUInteger)rbytes]) == 0 ) {
+                                    break;
+                                }
+                                headerObject = [dogma headerObjectFromHeaderStream:(unsigned char *)receivedData.bytes streamLength:lengthOfHeader];
+                                if( [dogma isBrokenHeaderObject:headerObject] == YES ) {
+                                    gotBrokenPacket = YES;
+                                    break;
+                                }
+                                [receivedData replaceBytesInRange:NSMakeRange(0, lengthOfHeader) withBytes:NULL length:0];
+                                if( [dogma isControlHeaderObject:headerObject] == YES ) {
+                                    id controlObject = [dogma controlHeaderObjectHandling:headerObject];
+                                    if( controlObject != nil ) {
+                                        [self pushQueryForWithOperation:HJAsyncTcpCommunicateExecutorOperationSend header:controlObject body:nil anQuery:anQuery];
+                                    }
+                                    headerObject = nil;
+                                }
                             }
-                            headerObject = [dogma headerObjectFromHeaderStream:(unsigned char *)receivedData.bytes streamLength:lengthOfHeader];
-                            if( [dogma isBrokenHeaderObject:headerObject] == YES ) {
-                                gotBrokenPacket = YES;
-                                break;
-                            }
-                            lengthOfBody = [dogma lengthOfBodyFromHeaderObject:headerObject];
-                            [receivedData replaceBytesInRange:NSMakeRange(0, lengthOfHeader) withBytes:NULL length:0];
-                            if( lengthOfBody == 0 ) {
+                            if( headerObject != nil ) {
+                                lengthOfBody = [dogma lengthOfBodyFromHeaderObject:headerObject];
+                                if( receivedData.length < lengthOfBody ) {
+                                    break;
+                                }
+                                if( lengthOfBody > 0 ) {
+                                    bodyObject = [dogma bodyObjectFromBodyStream:(unsigned char *)receivedData.bytes streamLength:lengthOfBody headerObject:headerObject];
+                                    if( [dogma isBrokenBodyObject:bodyObject] == YES ) {
+                                        gotBrokenPacket = YES;
+                                        break;
+                                    }
+                                    [receivedData replaceBytesInRange:NSMakeRange(0, lengthOfBody) withBytes:NULL length:0];
+                                } else {
+                                    bodyObject = nil;
+                                }
                                 if( receiveHandler != nil ) {
                                     dispatch_async(dispatch_get_main_queue(), ^{
-                                        receiveHandler(YES, headerObject, nil);
+                                        receiveHandler(YES, headerObject, bodyObject);
                                     });
                                 }
-                                [self pushQueryForWithOperation:HJAsyncTcpCommunicateExecutorOperationReceive header:headerObject body:nil anQuery:anQuery];
+                                [self pushQueryForWithOperation:HJAsyncTcpCommunicateExecutorOperationReceive header:headerObject body:bodyObject anQuery:anQuery];
+                                lengthOfBody = 0;
                                 headerObject = nil;
+                                bodyObject = nil;
                             }
                         }
-                        if( headerObject != nil ) {
-                            if( receivedData.length < lengthOfBody ) {
-                                break;
-                            }
-                            bodyObject = [dogma bodyObjectFromBodyStream:(unsigned char *)receivedData.bytes streamLength:lengthOfBody headerObject:headerObject];
+                        break;
+                    case HJAsyncTcpCommunicateDogmaMethodTypeBodyWithEof :
+                        while( (lengthOfBody = [dogma lengthOfBodyFromStream:(unsigned char *)receivedData.bytes streamLength:receivedData.length appendedLength:(NSUInteger)rbytes]) > 0 ) {
+                            bodyObject = [dogma bodyObjectFromBodyStream:(unsigned char *)receivedData.bytes streamLength:lengthOfBody headerObject:nil];
                             if( [dogma isBrokenBodyObject:bodyObject] == YES ) {
                                 gotBrokenPacket = YES;
                                 break;
@@ -427,43 +458,24 @@
                             [receivedData replaceBytesInRange:NSMakeRange(0, lengthOfBody) withBytes:NULL length:0];
                             if( receiveHandler != nil ) {
                                 dispatch_async(dispatch_get_main_queue(), ^{
-                                    receiveHandler(YES, headerObject, bodyObject);
+                                    receiveHandler(YES, nil, bodyObject);
                                 });
                             }
-                            [self pushQueryForWithOperation:HJAsyncTcpCommunicateExecutorOperationReceive header:headerObject body:bodyObject anQuery:anQuery];
-                            lengthOfBody = 0;
-                            headerObject = nil;
+                            [self pushQueryForWithOperation:HJAsyncTcpCommunicateExecutorOperationReceive header:nil body:bodyObject anQuery:anQuery];
                             bodyObject = nil;
                         }
-                    }
-                    break;
-                case HJAsyncTcpCommunicateDogmaMethodTypeBodyWithEof :
-                    while( (lengthOfBody = [dogma lengthOfBodyFromStream:(unsigned char *)receivedData.bytes streamLength:receivedData.length appendedLength:(NSUInteger)rbytes]) > 0 ) {
-                        bodyObject = [dogma bodyObjectFromBodyStream:(unsigned char *)receivedData.bytes streamLength:lengthOfBody headerObject:nil];
-                        if( [dogma isBrokenBodyObject:bodyObject] == YES ) {
-                            gotBrokenPacket = YES;
-                            break;
-                        }
-                        [receivedData replaceBytesInRange:NSMakeRange(0, lengthOfBody) withBytes:NULL length:0];
+                        break;
+                    default :
+                        bodyObject = [NSData dataWithBytes:receivedData.bytes length:receivedData.length];
+                        [receivedData replaceBytesInRange:NSMakeRange(0, receivedData.length) withBytes:NULL length:receivedData.length];
                         if( receiveHandler != nil ) {
                             dispatch_async(dispatch_get_main_queue(), ^{
                                 receiveHandler(YES, nil, bodyObject);
                             });
                         }
                         [self pushQueryForWithOperation:HJAsyncTcpCommunicateExecutorOperationReceive header:nil body:bodyObject anQuery:anQuery];
-                        bodyObject = nil;
-                    }
-                    break;
-                default :
-                    bodyObject = [NSData dataWithBytes:receivedData.bytes length:receivedData.length];
-                    [receivedData replaceBytesInRange:NSMakeRange(0, receivedData.length) withBytes:NULL length:receivedData.length];
-                    if( receiveHandler != nil ) {
-                        dispatch_async(dispatch_get_main_queue(), ^{
-                            receiveHandler(YES, nil, bodyObject);
-                        });
-                    }
-                    [self pushQueryForWithOperation:HJAsyncTcpCommunicateExecutorOperationReceive header:nil body:bodyObject anQuery:anQuery];
-                    break;
+                        break;
+                }
             }
             if( gotBrokenPacket == YES ) {
                 break;
@@ -473,12 +485,13 @@
     
     close(sockfd);
     
-    NSString *addressKey = _addressForSocket[(@(sockfd)).stringValue];
-    if( addressKey != nil ) {
+    [dogma resetAfterDisconnected];
+    
+    if( key.length > 0 ) {
         @synchronized(self) {
-            [_dogmas removeObjectForKey:addressKey];
-            [_addressForSocket removeObjectForKey:(@(sockfd)).stringValue];
-            [_sockets removeObjectForKey:addressKey];
+            [_dogmas removeObjectForKey:key];
+            [_sockets removeObjectForKey:key];
+            [_serverInfos removeObjectForKey:key];
         }
     }
     if( disconnectHandler != nil ) {

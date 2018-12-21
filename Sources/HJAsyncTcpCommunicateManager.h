@@ -37,16 +37,15 @@ typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateManagerEvent)
 
 - (BOOL)standbyWithWorkerName:(NSString * _Nonnull)workerName;
 
-- (void)setServerAddress:(NSString * _Nonnull)address port:(NSNumber * _Nonnull)port forKey:(NSString * _Nonnull)key;
-- (NSString * _Nullable)serverAddressForKey:(NSString * _Nonnull)key;
-- (NSNumber * _Nullable)serverPortForKey:(NSString * _Nonnull)key;
+- (BOOL)setServerAddress:(NSString * _Nonnull)address port:(NSNumber * _Nonnull)port parameters:(NSDictionary *)parameters forKey:(NSString * _Nonnull)key;
+- (HJAsyncTcpServerInfo *)serverInfoForKey:(NSString * _Nonnull)key;
 - (void)removeServerForKey:(NSString * _Nonnull)key;
 - (void)removeAllServers;
 - (BOOL)isConnectingForServerKey:(NSString * _Nonnull)key;
 
 - (void)connectToServerKey:(NSString * _Nonnull)key timeout:(NSTimeInterval)timeout dogma:(id _Nonnull)dogma connectHandler:(HJAsyncTcpCommunicatorHandler _Nullable)connectHandler receiveHandler:(HJAsyncTcpCommunicatorHandler _Nullable)receiveHandler disconnect:(HJAsyncTcpCommunicatorHandler _Nullable)disconnectHandler;
 - (void)sendHeaderObject:(id _Nullable)headerObject bodyObject:(id _Nullable)bodyObject toServerKey:(NSString * _Nonnull)key completion:(HJAsyncTcpCommunicatorHandler _Nullable)completion;
-- (void)disconnectFromServerKey:(NSString * _Nonnull)key;
+- (void)disconnectFromServerForKey:(NSString * _Nonnull)key;
 
 @property (nonatomic, readonly) BOOL standby;
 
