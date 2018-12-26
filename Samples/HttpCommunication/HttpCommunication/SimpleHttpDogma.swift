@@ -97,7 +97,7 @@ class SimpleHttpDogma : HJAsyncTcpCommunicateDogma
         return UInt(bodyString.lengthOfBytes(using: String.Encoding.utf8.rawValue))
     }
     
-    override func writeBuffer(_ writeBuffer:UnsafeMutablePointer<UInt8>?, bufferLength:UInt, fromHeaderObject headerObject:Any?, bodyObject:Any?) -> UInt {
+    override func writeBuffer(_ writeBuffer: UnsafeMutablePointer<UInt8>?, bufferLength: UInt, fromHeaderObject headerObject: Any?, bodyObject: Any?, fragmentHandler: Any?) -> UInt {
         
         guard let writeBuffer = writeBuffer, bufferLength > 0 else {
             return 0;
