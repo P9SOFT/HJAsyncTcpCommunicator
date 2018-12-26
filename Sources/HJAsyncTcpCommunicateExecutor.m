@@ -24,6 +24,7 @@
     NSUInteger          _sizeOfWriteBuffer;
 }
 
+- (BOOL)prepareWriteBufferForSize:(NSUInteger)sizeOfWriteBuffer;
 - (HYResult *)resultForQuery:(id)anQuery withEvent:(HJAsyncTcpCommunicateExecutorEvent)event;
 - (void)pushQueryForWithOperation:(HJAsyncTcpCommunicateExecutorOperation)operation header:(id)headerObject body:(id)bodyObject anQuery:(id)anQyery;
 - (void)storeResultWithEvent:(HJAsyncTcpCommunicateExecutorEvent)event query:(id)anQuery flag:(BOOL)flag completion:(HJAsyncTcpCommunicatorHandler)completion;
@@ -54,6 +55,15 @@
         _readBuffSize = kDefaultBufferSize;
     }
     return self;
+}
+
+- (void)dealloc
+{
+    if( _writeBuffer != NULL ) {
+        free(_writeBuffer);
+        _writeBuffer = NULL;
+        _sizeOfWriteBuffer = 0;
+    }
 }
 
 - (NSString *)name
@@ -105,6 +115,25 @@
 {
     [self storeResult:[self resultForQuery:anQuery withEvent:HJAsyncTcpCommunicateExecutorEventCanceled]];
     return YES;
+}
+
+- (BOOL)prepareWriteBufferForSize:(NSUInteger)sizeOfWriteBuffer
+{
+    if( _writeBuffer == NULL ) {
+        if( (_writeBuffer = (unsigned char *)malloc((size_t)sizeOfWriteBuffer)) != NULL ) {
+            _sizeOfWriteBuffer = sizeOfWriteBuffer;
+        }
+    } else {
+        if( sizeOfWriteBuffer > _sizeOfWriteBuffer ) {
+            if( (_writeBuffer = (unsigned char *)realloc(_writeBuffer, (size_t)sizeOfWriteBuffer)) != NULL ) {
+                _sizeOfWriteBuffer = sizeOfWriteBuffer;
+            }
+        }
+    }
+    if( _writeBuffer == NULL ) {
+        _sizeOfWriteBuffer = 0;
+    }
+    return (_writeBuffer != NULL);
 }
 
 - (id)resultForExpiredQuery:(id)anQuery
@@ -282,23 +311,13 @@
         return;
     }
     
-    if( [dogma writeAtOnce] == YES ) {
-        if( _writeBuffer == NULL ) {
-            if( (_writeBuffer = (unsigned char *)malloc((size_t)length)) != NULL ) {
-                _sizeOfWriteBuffer = length;
-            }
-        } else {
-            if( length > _sizeOfWriteBuffer ) {
-                if( (_writeBuffer = (unsigned char *)realloc(_writeBuffer, (size_t)length)) != NULL ) {
-                    _sizeOfWriteBuffer = length;
-                }
-            }
-        }
-        if( _writeBuffer == NULL ) {
+    id fragmentHandler = [dogma fragmentHandlerFromHeaderObject: headerObject bodyObject:bodyObject];
+    if( fragmentHandler == nil ) {
+        if( [self prepareWriteBufferForSize:length] == NO ) {
             [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventInternalError query:anQuery flag:NO completion:completion];
             return;
         }
-        NSUInteger wbytes = [dogma writeBuffer:_writeBuffer bufferLength:length fromHeaderObject:headerObject bodyObject:bodyObject];
+        NSUInteger wbytes = [dogma writeBuffer:_writeBuffer bufferLength:length fromHeaderObject:headerObject bodyObject:bodyObject fragmentHandler:nil];
         if( wbytes == 0 ) {
             [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventEmptyData query:anQuery flag:NO completion:completion];
             return;
@@ -308,19 +327,26 @@
             return;
         }
     } else {
-        NSArray *fragments = [dogma writeFragmentFromHeaderObject:headerObject bodyObject:bodyObject];
-        if( fragments.count == 0 ) {
-            [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventEmptyData query:anQuery flag:NO completion:completion];
+        if( [fragmentHandler conformsToProtocol:@protocol(HJAsyncTcpCommunicateFragmentHandlerProtocol)] == NO ) {
+            [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventInternalError query:anQuery flag:NO completion:completion];
             return;
         }
-        for( HJAsyncTcpCommunicateWriteFragment *fragment in fragments ) {
-            if( (fragment.fragmentBuffer != NULL) && (fragment.fragmentLength > 0) ) {
-                NSUInteger wbytes = (int)write(sockfdNumber.intValue, fragment.fragmentBuffer, fragment.fragmentLength);
-                if( wbytes != fragment.fragmentLength ) {
-                    [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventNetworkError query:anQuery flag:NO completion:completion];
-                    return;
-                }
+        while( [fragmentHandler haveWritableFragment] == YES ) {
+            NSUInteger fragmentlen = [fragmentHandler reserveFragment];
+            if( [self prepareWriteBufferForSize:fragmentlen] == NO ) {
+                [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventInternalError query:anQuery flag:NO completion:completion];
+                return;
             }
+            NSUInteger wbytes = [dogma writeBuffer:_writeBuffer bufferLength:fragmentlen fromHeaderObject:headerObject bodyObject:bodyObject fragmentHandler:fragmentHandler];
+            if( wbytes == 0 ) {
+                [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventEmptyData query:anQuery flag:NO completion:completion];
+                return;
+            }
+            if( (wbytes = (int)write(sockfdNumber.intValue, _writeBuffer, wbytes)) <= 0 ) {
+                [self storeResultWithEvent:HJAsyncTcpCommunicateExecutorEventNetworkError query:anQuery flag:NO completion:completion];
+                return;
+            }
+            [fragmentHandler flushFragment];
         }
     }
     

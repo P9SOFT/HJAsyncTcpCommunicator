@@ -9,46 +9,6 @@
 
 #import "HJAsyncTcpCommunicateDogma.h"
 
-@implementation HJAsyncTcpCommunicateWriteFragment
-
-- (instancetype)initWithBufferSize:(NSInteger)size
-{
-    if( [super init] == nil ) {
-        return nil;
-    }
-    if( [self prepareBufferForSize:size] == NO ) {
-        return nil;
-    }
-    return self;
-}
-
-- (BOOL)prepareBufferForSize:(NSInteger)size
-{
-    if( size <= 0 ) {
-        return NO;
-    }
-    if( _fragmentBuffer != NULL ) {
-        _fragmentBuffer = (unsigned char *)realloc(_fragmentBuffer, (size_t)size);
-    } else {
-        _fragmentBuffer = (unsigned char *)malloc((size_t)size);
-    }
-    if( _fragmentBuffer != NULL ) {
-        _fragmentLength = size;
-    }
-    return YES;
-}
-
-- (void)dealloc
-{
-    if( _fragmentBuffer != NULL ) {
-        free(_fragmentBuffer);
-        _fragmentBuffer = NULL;
-        _fragmentLength = 0;
-    }
-}
-
-@end
-
 @implementation HJAsyncTcpCommunicateDogma
 
 - (HJAsyncTcpCommunicateDogmaMethodType)methodType
@@ -161,12 +121,12 @@
     return [bodyObject lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
 }
 
-- (BOOL)writeAtOnce
+- (id _Nullable)fragmentHandlerFromHeaderObject:(id _Nullable)headerObject bodyObject:(id _Nullable)bodyObject
 {
-    return YES;
+    return nil;
 }
 
-- (NSUInteger)writeBuffer:(unsigned char *)writeBuffer bufferLength:(NSUInteger)bufferLength fromHeaderObject:(id)headerObject bodyObject:(id)bodyObject
+- (NSUInteger)writeBuffer:(unsigned char * _Nullable)writeBuffer bufferLength:(NSUInteger)bufferLength fromHeaderObject:(id _Nullable)headerObject bodyObject:(id _Nullable)bodyObject fragmentHandler:(id _Nullable)fragmentHandler
 {
     if( (writeBuffer == NULL) || (bufferLength == 0) || ([headerObject isKindOfClass:[NSData class]] == NO) || ([bodyObject isKindOfClass:[NSData class]] == NO) ) {
         return 0;
@@ -188,11 +148,6 @@
         memcpy(plook, (unsigned char *)[bodyObject bytes], bodyLength);
     }
     return amountLength;
-}
-
-- (NSArray<HJAsyncTcpCommunicateWriteFragment *> *)writeFragmentFromHeaderObject:(id)headerObject bodyObject:(id)bodyObject
-{
-    return nil;
 }
 
 - (BOOL)prepareAfterConnected

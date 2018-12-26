@@ -19,13 +19,11 @@ typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateDogmaMethodType)
 
 typedef void(^HJAsyncTcpCommunicatorHandler)(BOOL, id _Nullable , id _Nullable);
 
-@interface HJAsyncTcpCommunicateWriteFragment : NSObject
+@protocol HJAsyncTcpCommunicateFragmentHandlerProtocol
 
-- (instancetype _Nullable)initWithBufferSize:(NSInteger)size;
-- (BOOL)prepareBufferForSize:(NSInteger)size;
-
-@property (nonatomic, readonly) unsigned char * _Nullable fragmentBuffer;
-@property (nonatomic, readonly) NSUInteger fragmentLength;
+- (BOOL)haveWritableFragment;
+- (NSUInteger)reserveFragment;
+- (void)flushFragment;
 
 @end
 
@@ -54,9 +52,8 @@ typedef void(^HJAsyncTcpCommunicatorHandler)(BOOL, id _Nullable , id _Nullable);
 - (NSUInteger)lengthOfHandshakeFromHandshakeObject:(id _Nullable)handshakeObject;
 - (NSUInteger)lengthOfHeaderFromHeaderObject:(id _Nullable)headerObject;
 - (NSUInteger)lengthOfBodyFromBodyObject:(id _Nullable)bodyObject;
-- (BOOL)writeAtOnce;
-- (NSUInteger)writeBuffer:(unsigned char * _Nullable)writeBuffer bufferLength:(NSUInteger)bufferLength fromHeaderObject:(id _Nullable)headerObject bodyObject:(id _Nullable)bodyObject;
-- (NSArray<HJAsyncTcpCommunicateWriteFragment *> * _Nullable)writeFragmentFromHeaderObject:(id _Nullable)headerObject bodyObject:(id _Nullable)bodyObject;
+- (id _Nullable)fragmentHandlerFromHeaderObject:(id _Nullable)headerObject bodyObject:(id _Nullable)bodyObject;
+- (NSUInteger)writeBuffer:(unsigned char * _Nullable)writeBuffer bufferLength:(NSUInteger)bufferLength fromHeaderObject:(id _Nullable)headerObject bodyObject:(id _Nullable)bodyObject fragmentHandler:(id _Nullable)fragmentHandler;
 
 - (BOOL)prepareAfterConnected;
 - (void)resetAfterDisconnected;
