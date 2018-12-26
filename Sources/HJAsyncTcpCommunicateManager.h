@@ -37,7 +37,7 @@ typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateManagerEvent)
 
 - (BOOL)standbyWithWorkerName:(NSString * _Nonnull)workerName;
 
-- (BOOL)setServerAddress:(NSString * _Nonnull)address port:(NSNumber * _Nonnull)port parameters:(NSDictionary *)parameters forKey:(NSString * _Nonnull)key;
+- (BOOL)setServerAddress:(NSString * _Nonnull)address port:(NSNumber * _Nonnull)port parameters:(NSDictionary * _Nullable)parameters forKey:(NSString * _Nonnull)key;
 - (HJAsyncTcpServerInfo *)serverInfoForKey:(NSString * _Nonnull)key;
 - (void)removeServerForKey:(NSString * _Nonnull)key;
 - (void)removeAllServers;

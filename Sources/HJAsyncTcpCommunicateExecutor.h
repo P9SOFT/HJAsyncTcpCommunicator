@@ -65,9 +65,9 @@ typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateExecutorEvent)
 
 @interface HJAsyncTcpServerInfo : NSObject
 
-@property (nonatomic, strong) NSString *address;
-@property (nonatomic, strong) NSNumber *port;
-@property (nonatomic, strong) NSDictionary *parameters;
+@property (nonatomic, strong) NSString * _Nullable address;
+@property (nonatomic, strong) NSNumber * _Nullable port;
+@property (nonatomic, strong) NSDictionary * _Nullable parameters;
 
 @end
 
