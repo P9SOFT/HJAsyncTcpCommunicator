@@ -16,6 +16,36 @@
     return HJAsyncTcpCommunicateDogmaMethodTypeStream;
 }
 
+- (BOOL)needHandshake:(id)anQuery
+{
+    return NO;
+}
+
+- (id)firstHandshakeObjectAfterConnected:(id)anQuery
+{
+    return nil;
+}
+
+- (id)nextHandshakeObjectAfterUpdateHandshakeStatusFromObject:(id)handshakeObject
+{
+    return nil;
+}
+
+- (NSUInteger)lengthOfHandshakeFromStream:(unsigned char *)stream streamLength:(NSUInteger)streamLength appendedLength:(NSUInteger)appendedLength
+{
+    return 0;
+}
+
+- (id)handshakeObjectFromHeaderStream:(unsigned char *)stream streamLength:(NSUInteger)streamLength
+{
+    return nil;
+}
+
+- (BOOL)isBrokenHandshakeObject:(id)handshakeObject
+{
+    return NO;
+}
+
 - (NSUInteger)lengthOfHeaderFromStream:(unsigned char *)stream streamLength:(NSUInteger)streamLength appendedLength:(NSUInteger)appendedLength
 {
     return 0;
@@ -31,6 +61,11 @@
     if( [headerObject isKindOfClass:[NSData class]] == NO ) {
         return YES;
     }
+    return NO;
+}
+
+- (BOOL)isControlHeaderObject:(id _Nullable)headerObject
+{
     return NO;
 }
 
@@ -60,6 +95,16 @@
     return NO;
 }
 
+- (NSUInteger)lengthOfHandshakeFromHandshakeObject:(id)handshakeObject
+{
+    return 0;
+}
+
+- (id _Nullable)controlHeaderObjectHandling:(id _Nullable)headerObject
+{
+    return nil;
+}
+
 - (NSUInteger)lengthOfHeaderFromHeaderObject:(id)headerObject
 {
     if( [headerObject isKindOfClass:[NSData class]] == NO ) {
@@ -76,7 +121,12 @@
     return [bodyObject lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
 }
 
-- (NSUInteger)writeBuffer:(unsigned char *)writeBuffer bufferLength:(NSUInteger)bufferLength fromHeaderObject:(id)headerObject bodyObject:(id)bodyObject
+- (id _Nullable)fragmentHandlerFromHeaderObject:(id _Nullable)headerObject bodyObject:(id _Nullable)bodyObject
+{
+    return nil;
+}
+
+- (NSUInteger)writeBuffer:(unsigned char * _Nullable)writeBuffer bufferLength:(NSUInteger)bufferLength fromHeaderObject:(id _Nullable)headerObject bodyObject:(id _Nullable)bodyObject fragmentHandler:(id _Nullable)fragmentHandler
 {
     if( (writeBuffer == NULL) || (bufferLength == 0) || ([headerObject isKindOfClass:[NSData class]] == NO) || ([bodyObject isKindOfClass:[NSData class]] == NO) ) {
         return 0;
@@ -90,12 +140,23 @@
     unsigned char *plook = writeBuffer;
     if( headerLength > 0 ) {
         memcpy(plook, (unsigned char *)[headerObject bytes], headerLength);
-        plook += headerLength;
     }
     if( bodyLength > 0 ) {
+        if( headerLength > 0 ) {
+            plook += headerLength;
+        }
         memcpy(plook, (unsigned char *)[bodyObject bytes], bodyLength);
     }
     return amountLength;
+}
+
+- (BOOL)prepareAfterConnected
+{
+    return YES;
+}
+
+- (void)resetAfterDisconnected
+{
 }
 
 @end

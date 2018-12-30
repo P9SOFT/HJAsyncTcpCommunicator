@@ -105,46 +105,31 @@
     return paramDict;
 }
 
-- (void)setServerAddress:(NSString *)address port:(NSNumber *)port forKey:(NSString *)key
+- (BOOL)setServerAddress:(NSString *)address port:(NSNumber *)port parameters:(NSDictionary *)parameters forKey:(NSString *)key
 {
     if( (address.length == 0) || (port == nil) || (key.length == 0) ) {
-        return;
+        return NO;
     }
+    HJAsyncTcpServerInfo *info = [HJAsyncTcpServerInfo new];
+    info.address = address;
+    info.port = port;
+    info.parameters = parameters;
     @synchronized(self) {
-        _servers[key] = @[address, port];
+        _servers[key] = info;
     }
+    return YES;
 }
 
-- (NSString *)serverAddressForKey:(NSString *)key
+- (HJAsyncTcpServerInfo *)serverInfoForKey:(NSString *)key
 {
     if( key.length == 0 ) {
         return nil;
     }
-    NSString *address = nil;
+    HJAsyncTcpServerInfo *info = nil;
     @synchronized(self) {
-        NSArray *pair = _servers[key];
-        if( pair.count != 2 ) {
-            return nil;
-        }
-        address = pair[0];
+        info = _servers[key];
     }
-    return address;
-}
-
-- (NSNumber *)serverPortForKey:(NSString *)key
-{
-    if( key.length == 0 ) {
-        return nil;
-    }
-    NSNumber *port = nil;
-    @synchronized(self) {
-        NSArray *pair = _servers[key];
-        if( pair.count != 2 ) {
-            return nil;
-        }
-        port = pair[1];
-    }
-    return port;
+    return info;
 }
 
 - (void)removeServerForKey:(NSString *)key
@@ -153,7 +138,7 @@
         return;
     }
     @synchronized(self) {
-        [self disconnectFromServerKey:key];
+        [self disconnectFromServerForKey:key];
         [_servers removeObjectForKey:key];
     }
 }
@@ -162,7 +147,7 @@
 {
     @synchronized(self) {
         for( NSString *key in _servers ) {
-            [self disconnectFromServerKey:key];
+            [self disconnectFromServerForKey:key];
         }
         [_servers removeAllObjects];
     }
@@ -170,27 +155,27 @@
 
 - (BOOL)isConnectingForServerKey:(NSString *)key
 {
-    NSArray *pair = nil;
+    HJAsyncTcpServerInfo *info = nil;
     if( (self.standby == YES) && (key.length > 0) ) {
         @synchronized(self) {
-            pair = _servers[key];
+            info = _servers[key];
         }
     }
-    if( pair == nil ) {
+    if( info == nil ) {
         return NO;
     }
-    return [_executor haveSockfdForServerAddressPortPair:pair];
+    return [_executor haveSockfdForServerKey:key];
 }
 
-- (void)connectToServerKey:(NSString * _Nonnull)key timeout:(NSTimeInterval)timeout dogma:(id _Nonnull)dogma connectHandler:(HJAsyncTcpCommunicatorHandler _Nullable)connectHandler receiveHandler:(HJAsyncTcpCommunicatorHandler _Nullable)receiveHandler disconnect:(HJAsyncTcpCommunicatorHandler _Nullable)disconnectHandler
+- (void)connectToServerKey:(NSString *)key timeout:(NSTimeInterval)timeout dogma:(id)dogma connectHandler:(HJAsyncTcpCommunicatorHandler)connectHandler receiveHandler:(HJAsyncTcpCommunicatorHandler)receiveHandler disconnect:(HJAsyncTcpCommunicatorHandler)disconnectHandler
 {
-    NSArray *pair = nil;
+    HJAsyncTcpServerInfo *info = nil;
     if( (self.standby == YES) && (key.length > 0) && ([dogma isKindOfClass:[HJAsyncTcpCommunicateDogma class]] == YES) ) {
         @synchronized(self) {
-            pair = _servers[key];
+            info = _servers[key];
         }
     }
-    if( pair == nil ) {
+    if( info == nil ) {
         if( connectHandler != nil ) {
             dispatch_async(dispatch_get_main_queue(), ^{
                 connectHandler(NO, nil, nil);
@@ -201,7 +186,7 @@
     HYQuery *query = [HYQuery queryWithWorkerName:_workerName executerName: HJAsyncTcpCommunicateExecutorName];
     [query setParameter:@((NSInteger)HJAsyncTcpCommunicateExecutorOperationConnect) forKey:HJAsyncTcpCommunicateExecutorParameterKeyOperation];
     [query setParameter:key forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerKey];
-    [query setParameter:pair forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerAddressPortPair];
+    [query setParameter:info forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerInfo];
     [query setParameter:@(timeout) forKey:HJAsyncTcpCommunicateExecutorParameterKeyTimeout];
     [query setParameter:dogma forKey:HJAsyncTcpCommunicateExecutorParameterKeyDogma];
     [query setParameter:connectHandler forKey:HJAsyncTcpCommunicateExecutorParameterKeyConnectHandler];
@@ -212,13 +197,13 @@
 
 - (void)sendHeaderObject:(id)headerObject bodyObject:(id)bodyObject toServerKey:(NSString *)key completion:(HJAsyncTcpCommunicatorHandler)completion
 {
-    NSArray *pair = nil;
+    HJAsyncTcpServerInfo *info = nil;
     if( (self.standby == YES) && (key.length > 0) && ((headerObject != nil) || (bodyObject != nil)) ) {
         @synchronized(self) {
-            pair = _servers[key];
+            info = _servers[key];
         }
     }
-    if( pair == nil ) {
+    if( info == nil ) {
         if( completion != nil ) {
             dispatch_async(dispatch_get_main_queue(), ^{
                 completion(NO, nil, nil);
@@ -229,28 +214,28 @@
     HYQuery *query = [HYQuery queryWithWorkerName:_workerName executerName:HJAsyncTcpCommunicateExecutorName];
     [query setParameter:@((NSInteger)HJAsyncTcpCommunicateExecutorOperationSend) forKey: HJAsyncTcpCommunicateExecutorParameterKeyOperation];
     [query setParameter:key forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerKey];
-    [query setParameter:pair forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerAddressPortPair];
+    [query setParameter:info forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerInfo];
     [query setParameter:headerObject forKey:HJAsyncTcpCommunicateExecutorParameterKeyHeaderObject];
     [query setParameter:bodyObject forKey:HJAsyncTcpCommunicateExecutorParameterKeyBodyObject];
     [query setParameter:completion forKey:HJAsyncTcpCommunicateExecutorParameterKeyCompletionHandler];
     [[Hydra defaultHydra] pushQuery:query];
 }
 
-- (void)disconnectFromServerKey:(NSString * _Nonnull)key
+- (void)disconnectFromServerForKey:(NSString *)key
 {
-    NSArray *pair = nil;
+    HJAsyncTcpServerInfo *info = nil;
     if( (self.standby == YES) && (key.length > 0) ) {
         @synchronized(self) {
-            pair = _servers[key];
+            info = _servers[key];
         }
     }
-    if( pair == nil ) {
+    if( info == nil ) {
         return;
     }
     HYQuery *query = [HYQuery queryWithWorkerName:_workerName executerName:HJAsyncTcpCommunicateExecutorName];
     [query setParameter:@((NSInteger)HJAsyncTcpCommunicateExecutorOperationDisconnect) forKey:HJAsyncTcpCommunicateExecutorParameterKeyOperation];
     [query setParameter:key forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerKey];
-    [query setParameter:pair forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerAddressPortPair];
+    [query setParameter:info forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerInfo];
     [[Hydra defaultHydra] pushQuery:query];
 }
 
