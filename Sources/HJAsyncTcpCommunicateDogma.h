@@ -9,6 +9,13 @@
 
 @import Foundation;
 
+typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateDogmaSupportMode)
+{
+    HJAsyncTcpCommunicateDogmaSupportModeClient,
+    HJAsyncTcpCommunicateDogmaSupportModeServer,
+    HJAsyncTcpCommunicateDogmaSupportModeClientAndServer
+};
+
 typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateDogmaMethodType)
 {
     HJAsyncTcpCommunicateDogmaMethodTypeStream,
@@ -17,7 +24,7 @@ typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateDogmaMethodType)
     
 };
 
-typedef void(^HJAsyncTcpCommunicatorHandler)(BOOL, id _Nullable , id _Nullable);
+typedef void(^HJAsyncTcpCommunicatorHandler)(BOOL, NSString * _Nullable, id _Nullable , id _Nullable);
 
 @protocol HJAsyncTcpCommunicateFragmentHandlerProtocol
 
@@ -29,11 +36,13 @@ typedef void(^HJAsyncTcpCommunicatorHandler)(BOOL, id _Nullable , id _Nullable);
 
 @interface HJAsyncTcpCommunicateDogma : NSObject
 
+- (HJAsyncTcpCommunicateDogmaSupportMode)supportMode;
 - (HJAsyncTcpCommunicateDogmaMethodType)methodType;
 
 - (BOOL)needHandshake:(id _Nullable)anQuery;
 - (id _Nullable)firstHandshakeObjectAfterConnected:(id _Nullable)anQuery;
 - (id _Nullable)nextHandshakeObjectAfterUpdateHandshakeStatusFromObject:(id _Nullable)handshakeObject;
+- (void)updateHandshkeStatusIfNeedAfterSent:(id _Nullable)headerObject;
 - (NSUInteger)lengthOfHandshakeFromStream:(unsigned char * _Nullable)stream streamLength:(NSUInteger)streamLength appendedLength:(NSUInteger)appendedLength;
 - (id _Nullable)handshakeObjectFromHeaderStream:(unsigned char * _Nullable)stream streamLength:(NSUInteger)streamLength;
 - (BOOL)isBrokenHandshakeObject:(id _Nullable)handshakeObject;
@@ -43,6 +52,7 @@ typedef void(^HJAsyncTcpCommunicatorHandler)(BOOL, id _Nullable , id _Nullable);
 - (BOOL)isBrokenHeaderObject:(id _Nullable)headerObject;
 - (BOOL)isControlHeaderObject:(id _Nullable)headerObject;
 - (id _Nullable)controlHeaderObjectHandling:(id _Nullable)headerObject;
+- (BOOL)isBrokenControlObject:(id _Nullable)controlObject;
 
 - (NSUInteger)lengthOfBodyFromStream:(unsigned char * _Nullable)stream streamLength:(NSUInteger)streamLength appendedLength:(NSUInteger)appendedLength;
 - (NSUInteger)lengthOfBodyFromHeaderObject:(id _Nullable)headerObject;
@@ -55,7 +65,11 @@ typedef void(^HJAsyncTcpCommunicatorHandler)(BOOL, id _Nullable , id _Nullable);
 - (id _Nullable)fragmentHandlerFromHeaderObject:(id _Nullable)headerObject bodyObject:(id _Nullable)bodyObject;
 - (NSUInteger)writeBuffer:(unsigned char * _Nullable)writeBuffer bufferLength:(NSUInteger)bufferLength fromHeaderObject:(id _Nullable)headerObject bodyObject:(id _Nullable)bodyObject fragmentHandler:(id _Nullable)fragmentHandler;
 
+- (BOOL)clientAcceptedForKey:(NSString * _Nullable)clientKey fromServerKey:(NSString * _Nullable)serverKey;
+
 - (BOOL)prepareAfterConnected;
+- (BOOL)prepareAfterBinded;
 - (void)resetAfterDisconnected;
+- (void)resetAfterShutdowned;
 
 @end

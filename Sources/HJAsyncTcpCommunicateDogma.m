@@ -11,6 +11,11 @@
 
 @implementation HJAsyncTcpCommunicateDogma
 
+- (HJAsyncTcpCommunicateDogmaSupportMode)supportMode
+{
+    return HJAsyncTcpCommunicateDogmaSupportModeClientAndServer;
+}
+
 - (HJAsyncTcpCommunicateDogmaMethodType)methodType
 {
     return HJAsyncTcpCommunicateDogmaMethodTypeStream;
@@ -29,6 +34,10 @@
 - (id)nextHandshakeObjectAfterUpdateHandshakeStatusFromObject:(id)handshakeObject
 {
     return nil;
+}
+
+- (void)updateHandshkeStatusIfNeedAfterSent:(id)headerObject
+{
 }
 
 - (NSUInteger)lengthOfHandshakeFromStream:(unsigned char *)stream streamLength:(NSUInteger)streamLength appendedLength:(NSUInteger)appendedLength
@@ -105,6 +114,11 @@
     return nil;
 }
 
+- (BOOL)isBrokenControlObject:(id _Nullable)controlObject
+{
+    return YES;
+}
+
 - (NSUInteger)lengthOfHeaderFromHeaderObject:(id)headerObject
 {
     if( [headerObject isKindOfClass:[NSData class]] == NO ) {
@@ -118,7 +132,7 @@
     if( [bodyObject isKindOfClass:[NSData class]] == NO ) {
         return 0;
     }
-    return [bodyObject lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
+    return [bodyObject length];
 }
 
 - (id _Nullable)fragmentHandlerFromHeaderObject:(id _Nullable)headerObject bodyObject:(id _Nullable)bodyObject
@@ -128,7 +142,7 @@
 
 - (NSUInteger)writeBuffer:(unsigned char * _Nullable)writeBuffer bufferLength:(NSUInteger)bufferLength fromHeaderObject:(id _Nullable)headerObject bodyObject:(id _Nullable)bodyObject fragmentHandler:(id _Nullable)fragmentHandler
 {
-    if( (writeBuffer == NULL) || (bufferLength == 0) || ([headerObject isKindOfClass:[NSData class]] == NO) || ([bodyObject isKindOfClass:[NSData class]] == NO) ) {
+    if( (writeBuffer == NULL) || (bufferLength == 0) ) {
         return 0;
     }
     NSUInteger headerLength = [self lengthOfHeaderFromHeaderObject:headerObject];
@@ -150,12 +164,26 @@
     return amountLength;
 }
 
+- (BOOL)clientAcceptedForKey:(NSString *)clientKey fromServerKey:(NSString *)serverKey
+{
+    return YES;
+}
+
 - (BOOL)prepareAfterConnected
 {
     return YES;
 }
 
+- (BOOL)prepareAfterBinded
+{
+    return YES;
+}
+
 - (void)resetAfterDisconnected
+{
+}
+
+- (void)resetAfterShutdowned
 {
 }
 

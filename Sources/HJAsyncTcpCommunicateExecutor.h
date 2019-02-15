@@ -21,8 +21,11 @@
 #define     HJAsyncTcpCommunicateExecutorParameterKeyEvent                  @"HJAsyncTcpCommunicateExecutorParameterKeyEvent"
 #define     HJAsyncTcpCommunicateExecutorParameterKeyServerKey              @"HJAsyncTcpCommunicateExecutorParameterKeyServerKey"
 #define     HJAsyncTcpCommunicateExecutorParameterKeyServerInfo             @"HJAsyncTcpCommunicateExecutorParameterKeyServerInfo"
+#define     HJAsyncTcpCommunicateExecutorParameterKeyClientKey              @"HJAsyncTcpCommunicateExecutorParameterKeyClientKey"
 #define     HJAsyncTcpCommunicateExecutorParameterKeyTimeout                @"HJAsyncTcpCommunicateExecutorParameterKeyTimeout"
+#define     HJAsyncTcpCommunicateExecutorParameterKeyBacklog                @"HJAsyncTcpCommunicateExecutorParameterKeyBacklog"
 #define     HJAsyncTcpCommunicateExecutorParameterKeySockfd                 @"HJAsyncTcpCommunicateExecutorParameterKeySockfd"
+#define     HJAsyncTcpCommunicateExecutorParameterKeyListenfd               @"HJAsyncTcpCommunicateExecutorParameterKeyListenfd"
 #define     HJAsyncTcpCommunicateExecutorParameterKeyDogma                  @"HJAsyncTcpCommunicateExecutorParameterKeyDogma"
 #define     HJAsyncTcpCommunicateExecutorParameterKeyHandshakeParameter     @"HJAsyncTcpCommunicateExecutorParameterKeyHandshakeParameter"
 #define     HJAsyncTcpCommunicateExecutorParameterKeyHandshakeObject        @"HJAsyncTcpCommunicateExecutorParameterKeyHandshakeObject"
@@ -33,6 +36,9 @@
 #define     HJAsyncTcpCommunicateExecutorParameterKeyConnectHandler         @"HJAsyncTcpCommunicateExecutorParameterKeyConnectHandler"
 #define     HJAsyncTcpCommunicateExecutorParameterKeyReceiveHandler         @"HJAsyncTcpCommunicateExecutorParameterKeyReceiveHandler"
 #define     HJAsyncTcpCommunicateExecutorParameterKeyDisconnectHandler      @"HJAsyncTcpCommunicateExecutorParameterKeyDisconnectHandler"
+#define     HJAsyncTcpCommunicateExecutorParameterKeyBindHandler            @"HJAsyncTcpCommunicateExecutorParameterKeyBindHandler"
+#define     HJAsyncTcpCommunicateExecutorParameterKeyAcceptHandler          @"HJAsyncTcpCommunicateExecutorParameterKeyAcceptHandler"
+#define     HJAsyncTcpCommunicateExecutorParameterKeyShutdownHandler        @"HJAsyncTcpCommunicateExecutorParameterKeyShutdownHandler"
 #define     HJAsyncTcpCommunicateExecutorParameterKeyCompletionHandler      @"HJAsyncTcpCommunicateExecutorParameterKeyCompletionHandler"
 
 typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateExecutorOperation)
@@ -41,7 +47,12 @@ typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateExecutorOperation)
     HJAsyncTcpCommunicateExecutorOperationConnect,
     HJAsyncTcpCommunicateExecutorOperationDisconnect,
     HJAsyncTcpCommunicateExecutorOperationSend,
-    HJAsyncTcpCommunicateExecutorOperationReceive
+    HJAsyncTcpCommunicateExecutorOperationReceive,
+    HJAsyncTcpCommunicateExecutorOperationBind,
+    HJAsyncTcpCommunicateExecutorOperationAccept,
+    HJAsyncTcpCommunicateExecutorOperationBroadcast,
+    HJAsyncTcpCommunicateExecutorOperationCloseAllClient,
+    HJAsyncTcpCommunicateExecutorOperationShutdown
 };
 
 typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateExecutorEvent)
@@ -52,6 +63,9 @@ typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateExecutorEvent)
     HJAsyncTcpCommunicateExecutorEventReceived,
     HJAsyncTcpCommunicateExecutorEventSent,
     HJAsyncTcpCommunicateExecutorEventDisconnected,
+    HJAsyncTcpCommunicateExecutorEventBinded,
+    HJAsyncTcpCommunicateExecutorEventAccepted,
+    HJAsyncTcpCommunicateExecutorEventShutdowned,
     HJAsyncTcpCommunicateExecutorEventUnknownOperation,
     HJAsyncTcpCommunicateExecutorEventInvalidParameter,
     HJAsyncTcpCommunicateExecutorEventEmptyData,
@@ -68,12 +82,15 @@ typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateExecutorEvent)
 @property (nonatomic, strong) NSString * _Nullable address;
 @property (nonatomic, strong) NSNumber * _Nullable port;
 @property (nonatomic, strong) NSDictionary * _Nullable parameters;
+@property (nonatomic, assign) BOOL serverMode;
+@property (nonatomic, assign) BOOL acceptable;
 
 @end
 
 @interface HJAsyncTcpCommunicateExecutor : HYExecuter
 
 - (BOOL)haveSockfdForServerKey:(NSString * _Nullable)key;
+- (NSInteger)countOfSockfdForServerKey:(NSString * _Nullable)key;
 
 @property (nonatomic, readonly) NSUInteger readBuffSize;
 

@@ -67,11 +67,16 @@
     }
     HJAsyncTcpCommunicateExecutorOperation operation = (HJAsyncTcpCommunicateExecutorOperation)[[result parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyOperation] integerValue];
     HJAsyncTcpCommunicateExecutorEvent event = (HJAsyncTcpCommunicateExecutorEvent)[[result parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyEvent] integerValue];
+    NSString *clientKey = (NSString *)[result parameterForKey:HJAsyncTcpCommunicateExecutorParameterKeyClientKey];
     id headerObject = [result parameterForKey:HJAsyncTcpCommunicateManagerParameterKeyHeaderObject];
     id bodyObject = [result parameterForKey:HJAsyncTcpCommunicateManagerParameterKeyBodyObject];
+    
     NSMutableDictionary *paramDict = [[NSMutableDictionary alloc] init];
     
     paramDict[HJAsyncTcpCommunicateManagerParameterKeyServerKey] = key;
+    if( clientKey.length > 0 ) {
+        paramDict[HJAsyncTcpCommunicateManagerParameterKeyClientKey] = clientKey;
+    }
     paramDict[HJAsyncTcpCommunicateManagerParameterKeyReferenceResult] = result;
     
     switch( operation ) {
@@ -92,6 +97,15 @@
             if( bodyObject != nil ) {
                 paramDict[HJAsyncTcpCommunicateManagerParameterKeyBodyObject] = bodyObject;
             }
+            break;
+        case HJAsyncTcpCommunicateExecutorOperationBind :
+            paramDict[HJAsyncTcpCommunicateManagerParameterKeyEvent] = (event == HJAsyncTcpCommunicateExecutorEventBinded) ? @(HJAsyncTcpCommunicateManagerEventBinded) : @(HJAsyncTcpCommunicateManagerEventBindFailed);
+            break;
+        case HJAsyncTcpCommunicateExecutorOperationAccept :
+            paramDict[HJAsyncTcpCommunicateManagerParameterKeyEvent] = @(HJAsyncTcpCommunicateManagerEventAccepted);
+            break;
+        case HJAsyncTcpCommunicateExecutorOperationShutdown :
+            paramDict[HJAsyncTcpCommunicateManagerParameterKeyEvent] = @(HJAsyncTcpCommunicateManagerEventShutdowned);
             break;
         default :
             [paramDict removeAllObjects];
@@ -114,6 +128,8 @@
     info.address = address;
     info.port = port;
     info.parameters = parameters;
+    info.serverMode = NO;
+    info.acceptable = YES;
     @synchronized(self) {
         _servers[key] = info;
     }
@@ -153,7 +169,7 @@
     }
 }
 
-- (BOOL)isConnectingForServerKey:(NSString *)key
+- (BOOL)isConnectingServerForKey:(NSString *)key
 {
     HJAsyncTcpServerInfo *info = nil;
     if( (self.standby == YES) && (key.length > 0) ) {
@@ -164,10 +180,35 @@
     if( info == nil ) {
         return NO;
     }
+    if( info.serverMode == YES ) {
+        return NO;
+    }
     return [_executor haveSockfdForServerKey:key];
 }
 
-- (void)connectToServerKey:(NSString *)key timeout:(NSTimeInterval)timeout dogma:(id)dogma connectHandler:(HJAsyncTcpCommunicatorHandler)connectHandler receiveHandler:(HJAsyncTcpCommunicatorHandler)receiveHandler disconnect:(HJAsyncTcpCommunicatorHandler)disconnectHandler
+- (BOOL)isBindingServerForKey:(NSString *)key
+{
+    HJAsyncTcpServerInfo *info = nil;
+    if( (self.standby == YES) && (key.length > 0) ) {
+        @synchronized(self) {
+            info = _servers[key];
+        }
+    }
+    if( info == nil ) {
+        return NO;
+    }
+    if( info.serverMode == NO ) {
+        return NO;
+    }
+    return [_executor haveSockfdForServerKey:key];
+}
+
+- (void)connectToServerKey:(NSString *)key
+                   timeout:(NSTimeInterval)timeout
+                     dogma:(id)dogma
+                   connect:(HJAsyncTcpCommunicatorHandler)connectHandler
+                   receive:(HJAsyncTcpCommunicatorHandler)receiveHandler
+                disconnect:(HJAsyncTcpCommunicatorHandler)disconnectHandler
 {
     HJAsyncTcpServerInfo *info = nil;
     if( (self.standby == YES) && (key.length > 0) && ([dogma isKindOfClass:[HJAsyncTcpCommunicateDogma class]] == YES) ) {
@@ -175,14 +216,23 @@
             info = _servers[key];
         }
     }
+    switch( [dogma supportMode] ) {
+        case HJAsyncTcpCommunicateDogmaSupportModeClient :
+        case HJAsyncTcpCommunicateDogmaSupportModeClientAndServer :
+            break;
+        default :
+            info = nil;
+            break;
+    }
     if( info == nil ) {
         if( connectHandler != nil ) {
             dispatch_async(dispatch_get_main_queue(), ^{
-                connectHandler(NO, nil, nil);
+                connectHandler(NO, key, nil, nil);
             });
         }
         return;
     }
+    info.serverMode = NO;
     HYQuery *query = [HYQuery queryWithWorkerName:_workerName executerName: HJAsyncTcpCommunicateExecutorName];
     [query setParameter:@((NSInteger)HJAsyncTcpCommunicateExecutorOperationConnect) forKey:HJAsyncTcpCommunicateExecutorParameterKeyOperation];
     [query setParameter:key forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerKey];
@@ -206,7 +256,7 @@
     if( info == nil ) {
         if( completion != nil ) {
             dispatch_async(dispatch_get_main_queue(), ^{
-                completion(NO, nil, nil);
+                completion(NO, key, headerObject, bodyObject);
             });
         }
         return;
@@ -234,6 +284,196 @@
     }
     HYQuery *query = [HYQuery queryWithWorkerName:_workerName executerName:HJAsyncTcpCommunicateExecutorName];
     [query setParameter:@((NSInteger)HJAsyncTcpCommunicateExecutorOperationDisconnect) forKey:HJAsyncTcpCommunicateExecutorParameterKeyOperation];
+    [query setParameter:key forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerKey];
+    [query setParameter:info forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerInfo];
+    [[Hydra defaultHydra] pushQuery:query];
+}
+
+- (void)bindServerKey:(NSString *)key
+              backlog:(NSUInteger)backlog
+                dogma:(id)dogma
+                 bind:(HJAsyncTcpCommunicatorHandler)bindHandler
+               accept:(HJAsyncTcpCommunicatorHandler)acceptHandler
+              receive:(HJAsyncTcpCommunicatorHandler)receiveHandler
+           disconnect:(HJAsyncTcpCommunicatorHandler)disconnectHandler
+             shutdown:(HJAsyncTcpCommunicatorHandler)shutdownHandler
+{
+    HJAsyncTcpServerInfo *info = nil;
+    if( (self.standby == YES) && (key.length > 0) && ([dogma isKindOfClass:[HJAsyncTcpCommunicateDogma class]] == YES) ) {
+        @synchronized(self) {
+            info = _servers[key];
+        }
+    }
+    switch( [dogma supportMode] ) {
+        case HJAsyncTcpCommunicateDogmaSupportModeServer :
+        case HJAsyncTcpCommunicateDogmaSupportModeClientAndServer :
+            break;
+        default :
+            info = nil;
+            break;
+    }
+    if( info == nil ) {
+        if( bindHandler != nil ) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                bindHandler(NO, key, nil, nil);
+            });
+        }
+        return;
+    }
+    info.serverMode = YES;
+    HYQuery *query = [HYQuery queryWithWorkerName:_workerName executerName: HJAsyncTcpCommunicateExecutorName];
+    [query setParameter:@((NSInteger)HJAsyncTcpCommunicateExecutorOperationBind) forKey:HJAsyncTcpCommunicateExecutorParameterKeyOperation];
+    [query setParameter:key forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerKey];
+    [query setParameter:info forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerInfo];
+    [query setParameter:@(backlog) forKey:HJAsyncTcpCommunicateExecutorParameterKeyBacklog];
+    [query setParameter:dogma forKey:HJAsyncTcpCommunicateExecutorParameterKeyDogma];
+    [query setParameter:bindHandler forKey:HJAsyncTcpCommunicateExecutorParameterKeyBindHandler];
+    [query setParameter:acceptHandler forKey:HJAsyncTcpCommunicateExecutorParameterKeyAcceptHandler];
+    [query setParameter:receiveHandler forKey:HJAsyncTcpCommunicateExecutorParameterKeyReceiveHandler];
+    [query setParameter:disconnectHandler forKey:HJAsyncTcpCommunicateExecutorParameterKeyDisconnectHandler];
+    [query setParameter:shutdownHandler forKey:HJAsyncTcpCommunicateExecutorParameterKeyShutdownHandler];
+    [[Hydra defaultHydra] pushQuery:query];
+}
+
+- (void)sendHeaderObject:(id _Nullable)headerObject bodyObject:(id _Nullable)bodyObject toServerKey:(NSString * _Nonnull)serverKey clientKey:(NSString *)clientKey completion:(HJAsyncTcpCommunicatorHandler _Nullable)completion
+{
+    HJAsyncTcpServerInfo *info = nil;
+    if( (self.standby == YES) && (serverKey.length > 0) && (clientKey.length > 0) && ((headerObject != nil) || (bodyObject != nil)) ) {
+        @synchronized(self) {
+            info = _servers[serverKey];
+        }
+    }
+    if( info == nil ) {
+        if( completion != nil ) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                completion(NO, clientKey, headerObject, bodyObject);
+            });
+        }
+        return;
+    }
+    HYQuery *query = [HYQuery queryWithWorkerName:_workerName executerName:HJAsyncTcpCommunicateExecutorName];
+    [query setParameter:@((NSInteger)HJAsyncTcpCommunicateExecutorOperationSend) forKey: HJAsyncTcpCommunicateExecutorParameterKeyOperation];
+    [query setParameter:serverKey forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerKey];
+    [query setParameter:info forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerInfo];
+    [query setParameter:clientKey forKey:HJAsyncTcpCommunicateExecutorParameterKeyClientKey];
+    [query setParameter:headerObject forKey:HJAsyncTcpCommunicateExecutorParameterKeyHeaderObject];
+    [query setParameter:bodyObject forKey:HJAsyncTcpCommunicateExecutorParameterKeyBodyObject];
+    [query setParameter:completion forKey:HJAsyncTcpCommunicateExecutorParameterKeyCompletionHandler];
+    [[Hydra defaultHydra] pushQuery:query];
+}
+
+- (void)broadcastHeaderObject:(id _Nullable)headerObject bodyObject:(id _Nullable)bodyObject toServerKey:(NSString * _Nonnull)key
+{
+    HJAsyncTcpServerInfo *info = nil;
+    if( (self.standby == YES) && (key.length > 0) && ((headerObject != nil) || (bodyObject != nil)) ) {
+        @synchronized(self) {
+            info = _servers[key];
+        }
+    }
+    if( info == nil ) {
+        return;
+    }
+    HYQuery *query = [HYQuery queryWithWorkerName:_workerName executerName:HJAsyncTcpCommunicateExecutorName];
+    [query setParameter:@((NSInteger)HJAsyncTcpCommunicateExecutorOperationBroadcast) forKey: HJAsyncTcpCommunicateExecutorParameterKeyOperation];
+    [query setParameter:key forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerKey];
+    [query setParameter:info forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerInfo];
+    [query setParameter:headerObject forKey:HJAsyncTcpCommunicateExecutorParameterKeyHeaderObject];
+    [query setParameter:bodyObject forKey:HJAsyncTcpCommunicateExecutorParameterKeyBodyObject];
+    [[Hydra defaultHydra] pushQuery:query];
+}
+
+- (void)closeClientForKey:(NSString * _Nonnull)clientKey atServerKey:(NSString *)serverKey
+{
+    HJAsyncTcpServerInfo *info = nil;
+    if( (self.standby == YES) && (serverKey.length > 0) ) {
+        @synchronized(self) {
+            info = _servers[serverKey];
+        }
+    }
+    if( info == nil ) {
+        return;
+    }
+    HYQuery *query = [HYQuery queryWithWorkerName:_workerName executerName:HJAsyncTcpCommunicateExecutorName];
+    [query setParameter:@((NSInteger)HJAsyncTcpCommunicateExecutorOperationDisconnect) forKey:HJAsyncTcpCommunicateExecutorParameterKeyOperation];
+    [query setParameter:serverKey forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerKey];
+    [query setParameter:info forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerInfo];
+    [query setParameter:clientKey forKey:HJAsyncTcpCommunicateExecutorParameterKeyClientKey];
+    [[Hydra defaultHydra] pushQuery:query];
+}
+
+- (void)closeAllClientsAtServerKey:(NSString * _Nonnull)key
+{
+    HJAsyncTcpServerInfo *info = nil;
+    if( (self.standby == YES) && (key.length > 0) ) {
+        @synchronized(self) {
+            info = _servers[key];
+        }
+    }
+    if( info == nil ) {
+        return;
+    }
+    HYQuery *query = [HYQuery queryWithWorkerName:_workerName executerName:HJAsyncTcpCommunicateExecutorName];
+    [query setParameter:@((NSInteger)HJAsyncTcpCommunicateExecutorOperationCloseAllClient) forKey: HJAsyncTcpCommunicateExecutorParameterKeyOperation];
+    [query setParameter:key forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerKey];
+    [query setParameter:info forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerInfo];
+    [[Hydra defaultHydra] pushQuery:query];
+}
+
+- (BOOL)serverAcceptableForKey:(NSString * _Nonnull)key
+{
+    HJAsyncTcpServerInfo *info = nil;
+    if( (self.standby == YES) && (key.length > 0) ) {
+        @synchronized(self) {
+            info = _servers[key];
+        }
+    }
+    if( info == nil ) {
+        return NO;
+    }
+    return info.acceptable;
+}
+
+- (void)setServerAcceptable:(BOOL)acceptable forKey:(NSString * _Nonnull)key
+{
+    HJAsyncTcpServerInfo *info = nil;
+    if( (self.standby == YES) && (key.length > 0) ) {
+        @synchronized(self) {
+            info = _servers[key];
+        }
+    }
+    if( info == nil ) {
+        return;
+    }
+    info.acceptable = acceptable;
+}
+
+- (NSInteger)countOfClientsAtServerForKey:(NSString * _Nonnull)key
+{
+    HJAsyncTcpServerInfo *info = nil;
+    if( (self.standby == YES) && (key.length > 0) ) {
+        @synchronized(self) {
+            info = _servers[key];
+        }
+    }
+    if( info == nil ) {
+        return 0;
+    }
+    return [_executor countOfSockfdForServerKey:key];
+}
+
+- (void)shutdownServerForKey:(NSString * _Nonnull)key
+{
+    HJAsyncTcpServerInfo *info = nil;
+    if( (self.standby == YES) && (key.length > 0) ) {
+        @synchronized(self) {
+            info = _servers[key];
+        }
+    }
+    if( info == nil ) {
+        return;
+    }
+    HYQuery *query = [HYQuery queryWithWorkerName:_workerName executerName:HJAsyncTcpCommunicateExecutorName];
+    [query setParameter:@((NSInteger)HJAsyncTcpCommunicateExecutorOperationShutdown) forKey:HJAsyncTcpCommunicateExecutorParameterKeyOperation];
     [query setParameter:key forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerKey];
     [query setParameter:info forKey:HJAsyncTcpCommunicateExecutorParameterKeyServerInfo];
     [[Hydra defaultHydra] pushQuery:query];

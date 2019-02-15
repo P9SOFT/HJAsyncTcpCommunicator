@@ -1,7 +1,7 @@
 Pod::Spec.new do |s|
 
   s.name         = "HJAsyncTcpCommunicator"
-  s.version      = "1.2.0"
+  s.version      = "1.3.0"
   s.summary      = "Asynchronous TCP communication module based on Hydra framework."
   s.homepage     = "https://github.com/P9SOFT/HJAsyncTcpCommunicator"
   s.license      = { :type => 'MIT' }
@@ -10,7 +10,7 @@ Pod::Spec.new do |s|
   s.ios.deployment_target = '8.0'
   s.requires_arc = true
 
-  s.source       = { :git => "https://github.com/P9SOFT/HJAsyncTcpCommunicator.git", :tag => "1.2.0" }
+  s.source       = { :git => "https://github.com/P9SOFT/HJAsyncTcpCommunicator.git", :tag => "1.3.0" }
   s.source_files  = "Sources/*.{h,m}"
   s.public_header_files = "Sources/*.h"
 
