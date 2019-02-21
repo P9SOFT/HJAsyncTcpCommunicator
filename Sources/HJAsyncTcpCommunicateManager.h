@@ -40,42 +40,42 @@ typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateManagerEvent)
 
 + (HJAsyncTcpCommunicateManager * _Nonnull)defaultHJAsyncTcpCommunicateManager;
 
-- (BOOL)standbyWithWorkerName:(NSString * _Nonnull)workerName;
+- (BOOL)standbyWithWorkerName:(NSString * _Nullable)workerName;
 
-- (BOOL)setServerAddress:(NSString * _Nonnull)address port:(NSNumber * _Nonnull)port parameters:(NSDictionary * _Nullable)parameters forKey:(NSString * _Nonnull)key;
-- (HJAsyncTcpServerInfo *)serverInfoForKey:(NSString * _Nonnull)key;
-- (void)removeServerForKey:(NSString * _Nonnull)key;
-- (void)removeAllServers;
-- (BOOL)isConnectingServerForKey:(NSString * _Nonnull)key;
-- (BOOL)isBindingServerForKey:(NSString * _Nonnull)key;
+- (BOOL)setServerInfo:(HJAsyncTcpServerInfo * _Nullable)serverInfo forServerKey:(NSString * _Nullable)serverKey;
+- (HJAsyncTcpServerInfo *)serverInfoForServerKey:(NSString * _Nullable)serverKey;
+- (void)removeServerInfoForServerKey:(NSString * _Nullable)serverKey;
+- (void)removeAllServerInfos;
 
-- (void)connectToServerKey:(NSString * _Nonnull)key
-                   timeout:(NSTimeInterval)timeout
-                     dogma:(id _Nonnull)dogma
-                   connect:(HJAsyncTcpCommunicatorHandler _Nullable)connectHandler
-                   receive:(HJAsyncTcpCommunicatorHandler _Nullable)receiveHandler
-                disconnect:(HJAsyncTcpCommunicatorHandler _Nullable)disconnectHandler;
+- (void)connect:(NSString * _Nullable)serverKey
+        timeout:(NSTimeInterval)timeout
+          dogma:(id _Nullable)dogma
+        connect:(HJAsyncTcpCommunicatorHandler _Nullable)connectHandler
+        receive:(HJAsyncTcpCommunicatorHandler _Nullable)receiveHandler
+     disconnect:(HJAsyncTcpCommunicatorHandler _Nullable)disconnectHandler;
 
-- (void)sendHeaderObject:(id _Nullable)headerObject bodyObject:(id _Nullable)bodyObject toServerKey:(NSString * _Nonnull)key completion:(HJAsyncTcpCommunicatorHandler _Nullable)completion;
-- (void)disconnectFromServerForKey:(NSString * _Nonnull)key;
+- (void)bind:(NSString * _Nullable)serverKey
+     backlog:(NSUInteger)backlog
+       dogma:(id _Nullable)dogma
+        bind:(HJAsyncTcpCommunicatorHandler _Nullable)bindHandler
+      accept:(HJAsyncTcpCommunicatorHandler _Nullable)acceptHandler
+     receive:(HJAsyncTcpCommunicatorHandler _Nullable)receiveHandler
+  disconnect:(HJAsyncTcpCommunicatorHandler _Nullable)disconnectHandler
+    shutdown:(HJAsyncTcpCommunicatorHandler _Nullable)shutdownHandler;
 
-- (void)bindServerKey:(NSString * _Nonnull)key
-              backlog:(NSUInteger)backlog
-                dogma:(id _Nonnull)dogma
-                 bind:(HJAsyncTcpCommunicatorHandler _Nullable)bindHandler
-               accept:(HJAsyncTcpCommunicatorHandler _Nullable)acceptHandler
-              receive:(HJAsyncTcpCommunicatorHandler _Nullable)receiveHandler
-           disconnect:(HJAsyncTcpCommunicatorHandler _Nullable)disconnectHandler
-             shutdown:(HJAsyncTcpCommunicatorHandler _Nullable)shutdownHandler;
+- (void)sendHeaderObject:(id _Nullable)headerObject bodyObject:(id _Nullable)bodyObject toClientKey:(NSString * _Nullable)clientKey completion:(HJAsyncTcpCommunicatorHandler _Nullable)completion;
+- (void)broadcastHeaderObject:(id _Nullable)headerObject bodyObject:(id _Nullable)bodyObject toServerKey:(NSString * _Nullable)serverKey;
 
-- (void)sendHeaderObject:(id _Nullable)headerObject bodyObject:(id _Nullable)bodyObject toServerKey:(NSString * _Nonnull)serverKey clientKey:(NSString *)clientKey completion:(HJAsyncTcpCommunicatorHandler _Nullable)completion;
-- (void)broadcastHeaderObject:(id _Nullable)headerObject bodyObject:(id _Nullable)bodyObject toServerKey:(NSString * _Nonnull)serverKey;
-- (void)closeClientForKey:(NSString * _Nonnull)clientKey atServerKey:(NSString *)serverKey;
-- (void)closeAllClientsAtServerKey:(NSString * _Nonnull)key;
-- (BOOL)serverAcceptableForKey:(NSString * _Nonnull)key;
-- (void)setServerAcceptable:(BOOL)acceptable forKey:(NSString * _Nonnull)key;
-- (NSInteger)countOfClientsAtServerForKey:(NSString * _Nonnull)key;
-- (void)shutdownServerForKey:(NSString * _Nonnull)key;
+- (void)disconnectClientForClientKey:(NSString * _Nullable)clientKey;
+- (void)disconnectAllClientsAtServerKey:(NSString * _Nullable)serverKey;
+- (void)shutdownServerForServerKey:(NSString * _Nullable)serverKey;
+
+- (void)setServerAcceptable:(BOOL)acceptable forServerKey:(NSString * _Nullable)serverKey;
+- (BOOL)isAcceptableForServerKey:(NSString * _Nullable)serverKey;
+- (BOOL)isConnectingForClientKey:(NSString * _Nullable)clientKey;
+- (BOOL)isBindingForServerKey:(NSString * _Nullable)serverKey;
+- (NSInteger)countOfClientsAtServerForServerKey:(NSString * _Nullable)serverKey;
+- (HJAsyncTcpServerInfo *)serverInfoForClientKey:(NSString * _Nullable)clientKey;
 
 @property (nonatomic, readonly) BOOL standby;
 

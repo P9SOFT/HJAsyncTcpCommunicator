@@ -21,7 +21,7 @@ class SimpleHttpClientDogma : HJAsyncTcpCommunicateDogma
         return .headerWithBody
     }
     
-    override func lengthOfHeader(fromStream stream:UnsafeMutablePointer<UInt8>?, streamLength:UInt, appendedLength:UInt) -> UInt {
+    override func lengthOfHeader(fromStream stream: UnsafeMutablePointer<UInt8>?, streamLength: UInt, appendedLength: UInt, sessionQuery: Any?) -> UInt {
         
         guard let stream = stream else {
             return 0
@@ -36,7 +36,7 @@ class SimpleHttpClientDogma : HJAsyncTcpCommunicateDogma
         return 0
     }
     
-    override func headerObject(fromHeaderStream stream:UnsafeMutablePointer<UInt8>?, streamLength:UInt) -> Any? {
+    override func headerObject(fromHeaderStream stream: UnsafeMutablePointer<UInt8>?, streamLength: UInt, sessionQuery: Any?) -> Any? {
         
         guard let stream = stream else {
             return nil
@@ -70,7 +70,7 @@ class SimpleHttpClientDogma : HJAsyncTcpCommunicateDogma
         return UInt(contentLengthString) ?? 0
     }
     
-    override func bodyObject(fromBodyStream stream:UnsafeMutablePointer<UInt8>?, streamLength:UInt, headerObject:Any?) -> Any? {
+    override func bodyObject(fromBodyStream stream: UnsafeMutablePointer<UInt8>?, streamLength: UInt, headerObject: Any?, sessionQuery: Any?) -> Any? {
         
         guard let stream = stream else {
             return nil

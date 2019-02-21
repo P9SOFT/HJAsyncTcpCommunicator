@@ -11,6 +11,8 @@ import UIKit
 
 class ViewController: UIViewController {
     
+    fileprivate var currentConnectedClientKey:String?
+    
     let connectServerKey = "connectServerKey"
     let bindServerKey = "bindServerKey"
     
@@ -41,30 +43,25 @@ class ViewController: UIViewController {
     
     @IBAction func connectButtonTouchUpInside(_ sender: Any) {
         
-        if serverAddressTextField.isFirstResponder == true {
-            serverAddressTextField.resignFirstResponder()
-        }
-        if sendTextField.isFirstResponder == true {
-            sendTextField.resignFirstResponder()
-        }
+        resignAllResponders()
         
-        if connectButton.title(for: UIControlState()) == "Connect" {
+        if connectButton.title(for: .normal) == "Connect" {
             if let serverAddress = serverAddressTextField.text, serverAddress.count > 0 {
                 self.connectButton.isEnabled = false
                 // get server address and port from input string format like "http://www.p9soft.com:80", "www.p9soft.com:80", "www.p9soft.com"
                 let addressAndPort = self.addressAndPortPairFromString(serverAddress)
                 // set key to given server address and port
-                HJAsyncTcpCommunicateManager.default().setServerAddress(addressAndPort.address, port: addressAndPort.port as NSNumber, parameters: nil, forKey: connectServerKey)
+                let serverInfo = HJAsyncTcpServerInfo()
+                serverInfo.address = addressAndPort.address
+                serverInfo.port = addressAndPort.port as NSNumber
+                HJAsyncTcpCommunicateManager.default().setServerInfo(serverInfo, forServerKey: connectServerKey)
                 // request connect and regist each handlers.
-                HJAsyncTcpCommunicateManager.default().connect(toServerKey: connectServerKey, timeout: 3.0, dogma: SimpleHttpClientDogma(), connect: { (flag, key, header, body) in
+                HJAsyncTcpCommunicateManager.default().connect(connectServerKey, timeout: 3.0, dogma: SimpleHttpClientDogma(), connect: { (flag, key, header, body) in
                     if flag == true { // connect ok
+                        self.currentConnectedClientKey = key
                         self.connectButton.setTitle("Disconnect", for:.normal)
                         self.connectButton.isEnabled = true
-                        self.showAlert("Connected", completion: { () -> Void in
-                            if (self.sendTextField.text?.count ?? 0) == 0 {
-                                self.sendTextField.text = "GET /index.html HTTP/1.1"
-                            }
-                        })
+                        self.sendTextField.text = "GET /index.html HTTP/1.1"
                     } else { // connect failed
                         self.connectButton.isEnabled = true
                         self.showAlert("Connect Failed", completion:nil)
@@ -73,11 +70,10 @@ class ViewController: UIViewController {
                     if flag == true { // receive ok
                         self.headerTextView.text = (header == nil) ? nil : String(header! as! NSString)
                         self.bodyTextView.text = (body == nil) ? nil : String(body! as! NSString)
-                    } else { // receive failed
-                        self.showAlert("Receive Failed", completion:nil)
                     }
                 }, disconnect: { (flag, key, header, body) in
                     if flag == true { // disconnect ok
+                        self.currentConnectedClientKey = nil
                         self.showAlert("Disconnected", completion: { () -> Void in
                             self.connectButton.isEnabled = true
                             self.connectButton.setTitle("Connect", for: .normal)
@@ -89,22 +85,28 @@ class ViewController: UIViewController {
             }
         } else {
             // request disconnect.
-            HJAsyncTcpCommunicateManager.default().disconnectFromServer(forKey: connectServerKey)
+            if let clientKey = currentConnectedClientKey {
+                HJAsyncTcpCommunicateManager.default().disconnectClient(forClientKey: clientKey)
+            }
         }
     }
     
     @IBAction func sendButtonTouchUpInside(_ sender: Any) {
         
+        resignAllResponders()
+        
+        guard let clientKey = currentConnectedClientKey else {
+            showAlert("Connect first", completion: nil)
+            return
+        }
         guard var headerObject = sendTextField.text, headerObject.count > 0 else {
             showAlert("Fill Send Text", completion:nil)
             return
         }
         headerObject += "\r\n\r\n"
         
-        resignAllResponders()
-        
         // send
-        HJAsyncTcpCommunicateManager.default().sendHeaderObject(headerObject, bodyObject: nil, toServerKey: connectServerKey) { (flag, key, headerObject, bodyObject) in
+        HJAsyncTcpCommunicateManager.default().sendHeaderObject(headerObject, bodyObject: nil, toClientKey: clientKey) { (flag, key, headerObject, bodyObject) in
             if flag == false { // send failed
                 self.showAlert("Send Failed", completion:nil)
             }
@@ -113,14 +115,19 @@ class ViewController: UIViewController {
     
     @IBAction func bindButtonTouchUpInside(_ sender: Any) {
         
-        if bindButton.title(for: UIControlState()) == "Bind" {
+        resignAllResponders()
+        
+        if bindButton.title(for: .normal) == "Bind" {
             guard let portText = portTextField.text, portText.count > 0, let port = Int(portText) else {
                 showAlert("Fill Port Number", completion:nil)
                 return
             }
             bindButton.isEnabled = false
-            HJAsyncTcpCommunicateManager.default().setServerAddress("localhost", port: port as NSNumber, parameters: nil, forKey: bindServerKey)
-            HJAsyncTcpCommunicateManager.default().bindServerKey(bindServerKey, backlog: 4, dogma: SimpleHttpServerDogma(), bind: { (flag, key, header, body) in
+            let serverInfo = HJAsyncTcpServerInfo()
+            serverInfo.address = "localhost"
+            serverInfo.port = port as NSNumber
+            HJAsyncTcpCommunicateManager.default().setServerInfo(serverInfo, forServerKey: bindServerKey)
+            HJAsyncTcpCommunicateManager.default().bind(bindServerKey, backlog: 4, dogma: SimpleHttpServerDogma(), bind: { (flag, key, header, body) in
                 if flag == true {
                     self.bindButton.setTitle("Shutdown", for: .normal)
                 } else {
@@ -148,7 +155,7 @@ class ViewController: UIViewController {
                     dateFormater.dateFormat = "EEE',' dd' 'MMM' 'yyyy HH':'mm':'ss zzz"
                     let headerString = "Date: \(dateFormater.string(from: Date()))\r\nServer: SimpleHttpServer\r\nContent-Type: text/html\r\nContent-Length: \(bodyString.lengthOfBytes(using: .utf8))"
                     let responseString = "\(statusString)\r\n\(headerString)\r\n\r\n\(bodyString)"
-                    HJAsyncTcpCommunicateManager.default().sendHeaderObject(nil, bodyObject: responseString, toServerKey: self.bindServerKey, clientKey: key, completion: { (flag, key, header, body) in
+                    HJAsyncTcpCommunicateManager.default().sendHeaderObject(nil, bodyObject: responseString, toClientKey: key, completion: { (flag, key, header, body) in
                         if flag == true, let key = key {
                             print("response to client \(key) succeed")
                         }
@@ -164,34 +171,48 @@ class ViewController: UIViewController {
                 }
             })
         } else {
-            HJAsyncTcpCommunicateManager.default().shutdownServer(forKey: bindServerKey)
+            HJAsyncTcpCommunicateManager.default().shutdownServer(forServerKey: bindServerKey)
         }
     }
     
     @IBAction func acceptableButtonTouchUpInside(_ sender: Any) {
         
-        let acceptable = HJAsyncTcpCommunicateManager.default().serverAcceptable(forKey: bindServerKey)
-        HJAsyncTcpCommunicateManager.default().setServerAcceptable(!acceptable, forKey: bindServerKey)
-        acceptableButton.setTitle((acceptable == true ? "Acceptable" : "Unacceptable"), for: .normal)
+        resignAllResponders()
+        
+        guard HJAsyncTcpCommunicateManager.default().isBinding(forServerKey: bindServerKey) == true else {
+            return
+        }
+        
+        let acceptable = HJAsyncTcpCommunicateManager.default().isAcceptable(forServerKey: bindServerKey)
+        HJAsyncTcpCommunicateManager.default().setServerAcceptable(!acceptable, forServerKey: bindServerKey)
+        acceptableButton.setTitle(((HJAsyncTcpCommunicateManager.default().isAcceptable(forServerKey: bindServerKey)) == true ? "Acceptable" : "Unacceptable"), for: .normal)
     }
     
     @IBAction func closeAllButtonTouchUpInside(_ sender: Any) {
         
-        HJAsyncTcpCommunicateManager.default().closeAllClients(atServerKey: bindServerKey)
+        resignAllResponders()
+        
+        HJAsyncTcpCommunicateManager.default().disconnectAllClients(atServerKey: bindServerKey)
     }
     
     @IBAction func broadcastButtonTouchUpInside(_ sender: Any) {
         
-        guard var headerObject = broadcastTextField.text, headerObject.count > 0 else {
+        resignAllResponders()
+        
+        guard let bodyText = broadcastTextField.text, bodyText.count > 0 else {
             showAlert("Fill Broadcast Text", completion:nil)
             return
         }
-        headerObject += "\r\n"
         
-        resignAllResponders()
+        let bodyString = "<html><head><title>SimpleHttpServer</title></head><body>\(bodyText)</body></html>"
+        let statusString = "HTTP/1.1 200 OK"
+        let dateFormater = DateFormatter()
+        dateFormater.dateFormat = "EEE',' dd' 'MMM' 'yyyy HH':'mm':'ss zzz"
+        let headerString = "Date: \(dateFormater.string(from: Date()))\r\nServer: SimpleHttpServer\r\nContent-Type: text/html\r\nContent-Length: \(bodyString.lengthOfBytes(using: .utf8))"
+        let responseString = "\(statusString)\r\n\(headerString)\r\n\r\n\(bodyString)"
         
         // broadcast
-        HJAsyncTcpCommunicateManager.default().broadcastHeaderObject(nil, bodyObject: headerObject.data(using: .utf8), toServerKey: bindServerKey)
+        HJAsyncTcpCommunicateManager.default().broadcastHeaderObject(nil, bodyObject: responseString, toServerKey: bindServerKey)
     }
     
     fileprivate func resignAllResponders() {
@@ -228,37 +249,36 @@ class ViewController: UIViewController {
     
     fileprivate func showAlert(_ message:String, completion:(() -> Void)?) {
         
-        let alert = UIAlertController(title:"Alert", message:message, preferredStyle:UIAlertControllerStyle.alert)
-        alert.addAction(UIAlertAction(title:"OK", style:UIAlertActionStyle.default, handler:nil))
+        let alert = UIAlertController(title:"Alert", message:message, preferredStyle:UIAlertController.Style.alert)
+        alert.addAction(UIAlertAction(title:"OK", style:UIAlertAction.Style.default, handler:nil))
         self.present(alert, animated:true, completion:completion)
     }
     
-    func tcpCommunicateManagerHandler(notification:Notification) {
+    @objc func tcpCommunicateManagerHandler(notification:Notification) {
         
-        guard let userInfo = notification.userInfo, let key = userInfo[HJAsyncTcpCommunicateManagerParameterKeyServerKey] as? String, let event = userInfo[HJAsyncTcpCommunicateManagerParameterKeyEvent] as? Int else {
+        guard let userInfo = notification.userInfo,
+              let serverKey = userInfo[HJAsyncTcpCommunicateManagerParameterKeyServerKey] as? String,
+              let event = userInfo[HJAsyncTcpCommunicateManagerParameterKeyEvent] as? Int else {
             return
         }
+        let clientKey = userInfo[HJAsyncTcpCommunicateManagerParameterKeyClientKey] as? String ?? "--"
         
         if let event = HJAsyncTcpCommunicateManagerEvent(rawValue: event) {
             switch event {
             case .connected:
-                print("- server \(key) connected.")
+                print("- server \(serverKey) : client \(clientKey) connected.")
             case .disconnected:
-                print("- server \(key) disconnected.")
+                print("- server \(serverKey) : client \(clientKey) disconnected.")
             case .sent:
-                print("- server \(key) sent.")
-            case .sendFailed:
-                print("- server \(key) send failed.")
+                print("- server \(serverKey) : client \(clientKey) sent.")
             case .received:
-                print("- server \(key) received.")
+                print("- server \(serverKey) : client \(clientKey) received.")
             case .binded:
-                print("- server \(key) binded.")
-            case .bindFailed:
-                print("- server \(key) bind failed.")
+                print("- server \(serverKey) binded.")
             case .accepted:
-                print("- server \(key) accept client \(userInfo[HJAsyncTcpCommunicateManagerParameterKeyClientKey] ?? "")")
+                print("- server \(serverKey) : client \(clientKey) accepted.")
             case .shutdowned:
-                print("- server \(key) shutown")
+                print("- server \(serverKey) shutown")
             default:
                 break
             }

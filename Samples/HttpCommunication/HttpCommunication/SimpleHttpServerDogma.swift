@@ -21,7 +21,7 @@ class SimpleHttpServerDogma : HJAsyncTcpCommunicateDogma
         return .bodyWithEof
     }
     
-    override func lengthOfBody(fromStream stream: UnsafeMutablePointer<UInt8>?, streamLength: UInt, appendedLength: UInt) -> UInt {
+    override func lengthOfBody(fromStream stream: UnsafeMutablePointer<UInt8>?, streamLength: UInt, appendedLength: UInt, sessionQuery: Any?) -> UInt {
         
         guard let stream = stream, let string = NSString(bytes:stream, length:Int(streamLength), encoding:String.Encoding.utf8.rawValue) else {
             return 0
@@ -33,7 +33,7 @@ class SimpleHttpServerDogma : HJAsyncTcpCommunicateDogma
         return UInt(range.location+range.length)
     }
     
-    override func bodyObject(fromBodyStream stream:UnsafeMutablePointer<UInt8>?, streamLength:UInt, headerObject:Any?) -> Any? {
+    override func bodyObject(fromBodyStream stream: UnsafeMutablePointer<UInt8>?, streamLength: UInt, headerObject: Any?, sessionQuery: Any?) -> Any? {
         
         guard let stream = stream, let string = NSString(bytes:stream, length:Int(streamLength), encoding:String.Encoding.utf8.rawValue) else {
             return 0

@@ -51,7 +51,7 @@ typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateExecutorOperation)
     HJAsyncTcpCommunicateExecutorOperationBind,
     HJAsyncTcpCommunicateExecutorOperationAccept,
     HJAsyncTcpCommunicateExecutorOperationBroadcast,
-    HJAsyncTcpCommunicateExecutorOperationCloseAllClient,
+    HJAsyncTcpCommunicateExecutorOperationDisconnectAll,
     HJAsyncTcpCommunicateExecutorOperationShutdown
 };
 
@@ -70,7 +70,6 @@ typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateExecutorEvent)
     HJAsyncTcpCommunicateExecutorEventInvalidParameter,
     HJAsyncTcpCommunicateExecutorEventEmptyData,
     HJAsyncTcpCommunicateExecutorEventInvalidServerAddress,
-    HJAsyncTcpCommunicateExecutorEventAlreadyConnected,
     HJAsyncTcpCommunicateExecutorEventNetworkError,
     HJAsyncTcpCommunicateExecutorEventInternalError,
     HJAsyncTcpCommunicateExecutorEventCanceled,
@@ -82,15 +81,18 @@ typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateExecutorEvent)
 @property (nonatomic, strong) NSString * _Nullable address;
 @property (nonatomic, strong) NSNumber * _Nullable port;
 @property (nonatomic, strong) NSDictionary * _Nullable parameters;
-@property (nonatomic, assign) BOOL serverMode;
-@property (nonatomic, assign) BOOL acceptable;
+@property (nonatomic, assign) BOOL disableAccept;
+
+- (instancetype)initWithAddress:(NSString * _Nonnull)address port:(NSNumber * _Nonnull)port;
+- (instancetype)initWithAddress:(NSString * _Nonnull)address port:(NSNumber * _Nonnull)port parameters:(NSDictionary * _Nonnull)parameters;
 
 @end
 
 @interface HJAsyncTcpCommunicateExecutor : HYExecuter
 
-- (BOOL)haveSockfdForServerKey:(NSString * _Nullable)key;
+- (BOOL)haveSockfdForKey:(NSString * _Nullable)key;
 - (NSInteger)countOfSockfdForServerKey:(NSString * _Nullable)key;
+- (HJAsyncTcpServerInfo * _Nullable)serverInfoForClientKey:(NSString * _Nullable)key;
 
 @property (nonatomic, readonly) NSUInteger readBuffSize;
 

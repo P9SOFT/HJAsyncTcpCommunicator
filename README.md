@@ -1,7 +1,7 @@
 HJAsyncTcpCommunicator
 ============
 
-HJAsyncTcpCommunicator is asynchronous TCP communication module based on Hydra framework.
+HJAsyncTcpCommunicator is asynchronous TCP communication module for clinet and server based on Hydra framework.
 
 # Installation
 
