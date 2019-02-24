@@ -11,32 +11,41 @@
 
 @implementation HJAsyncTcpCommunicateDogma
 
+- (HJAsyncTcpCommunicateDogmaSupportMode)supportMode
+{
+    return HJAsyncTcpCommunicateDogmaSupportModeClientAndServer;
+}
+
 - (HJAsyncTcpCommunicateDogmaMethodType)methodType
 {
     return HJAsyncTcpCommunicateDogmaMethodTypeStream;
 }
 
-- (BOOL)needHandshake:(id)anQuery
+- (BOOL)needHandshake:(id)sessionQuery
 {
     return NO;
 }
 
-- (id)firstHandshakeObjectAfterConnected:(id)anQuery
+- (id)firstHandshakeObjectAfterConnected:(id)sessionQuery
 {
     return nil;
 }
 
-- (id)nextHandshakeObjectAfterUpdateHandshakeStatusFromObject:(id)handshakeObject
+- (id)nextHandshakeObjectAfterUpdateHandshakeStatusFromObject:(id)handshakeObject sessionQuery:(id)sessionQuery
 {
     return nil;
 }
 
-- (NSUInteger)lengthOfHandshakeFromStream:(unsigned char *)stream streamLength:(NSUInteger)streamLength appendedLength:(NSUInteger)appendedLength
+- (void)updateHandshkeStatusIfNeedAfterSent:(id)headerObject sessionQuery:(id)sessionQuery
+{
+}
+
+- (NSUInteger)lengthOfHandshakeFromStream:(unsigned char *)stream streamLength:(NSUInteger)streamLength appendedLength:(NSUInteger)appendedLength sessionQuery:(id)sessionQuery
 {
     return 0;
 }
 
-- (id)handshakeObjectFromHeaderStream:(unsigned char *)stream streamLength:(NSUInteger)streamLength
+- (id)handshakeObjectFromHeaderStream:(unsigned char *)stream streamLength:(NSUInteger)streamLength sessionQuery:(id)sessionQuery
 {
     return nil;
 }
@@ -46,12 +55,12 @@
     return NO;
 }
 
-- (NSUInteger)lengthOfHeaderFromStream:(unsigned char *)stream streamLength:(NSUInteger)streamLength appendedLength:(NSUInteger)appendedLength
+- (NSUInteger)lengthOfHeaderFromStream:(unsigned char *)stream streamLength:(NSUInteger)streamLength appendedLength:(NSUInteger)appendedLength sessionQuery:(id)sessionQuery
 {
     return 0;
 }
 
-- (id)headerObjectFromHeaderStream:(unsigned char *)stream streamLength:(NSUInteger)streamLength
+- (id)headerObjectFromHeaderStream:(unsigned char *)stream streamLength:(NSUInteger)streamLength sessionQuery:(id)sessionQuery
 {
     return nil;
 }
@@ -64,12 +73,12 @@
     return NO;
 }
 
-- (BOOL)isControlHeaderObject:(id _Nullable)headerObject
+- (BOOL)isControlHeaderObject:(id)headerObject
 {
     return NO;
 }
 
-- (NSUInteger)lengthOfBodyFromStream:(unsigned char *)stream streamLength:(NSUInteger)streamLength appendedLength:(NSUInteger)appendedLength
+- (NSUInteger)lengthOfBodyFromStream:(unsigned char *)stream streamLength:(NSUInteger)streamLength appendedLength:(NSUInteger)appendedLength sessionQuery:(id)sessionQuery
 {
     return streamLength;
 }
@@ -79,7 +88,7 @@
     return 0;
 }
 
-- (id)bodyObjectFromBodyStream:(unsigned char *)stream streamLength:(NSUInteger)streamLength headerObject:(id)headerObject
+- (id)bodyObjectFromBodyStream:(unsigned char *)stream streamLength:(NSUInteger)streamLength headerObject:(id)headerObject sessionQuery:(id)sessionQuery
 {
     if( (stream == NULL) || (streamLength <= 0) ) {
         return nil;
@@ -100,9 +109,14 @@
     return 0;
 }
 
-- (id _Nullable)controlHeaderObjectHandling:(id _Nullable)headerObject
+- (id)controlHeaderObjectHandling:(id)headerObject
 {
     return nil;
+}
+
+- (BOOL)isBrokenControlObject:(id)controlObject
+{
+    return YES;
 }
 
 - (NSUInteger)lengthOfHeaderFromHeaderObject:(id)headerObject
@@ -118,17 +132,17 @@
     if( [bodyObject isKindOfClass:[NSData class]] == NO ) {
         return 0;
     }
-    return [bodyObject lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
+    return [bodyObject length];
 }
 
-- (id _Nullable)fragmentHandlerFromHeaderObject:(id _Nullable)headerObject bodyObject:(id _Nullable)bodyObject
+- (id)fragmentHandlerFromHeaderObject:(id)headerObject bodyObject:(id)bodyObject
 {
     return nil;
 }
 
-- (NSUInteger)writeBuffer:(unsigned char * _Nullable)writeBuffer bufferLength:(NSUInteger)bufferLength fromHeaderObject:(id _Nullable)headerObject bodyObject:(id _Nullable)bodyObject fragmentHandler:(id _Nullable)fragmentHandler
+- (NSUInteger)writeBuffer:(unsigned char *)writeBuffer bufferLength:(NSUInteger)bufferLength fromHeaderObject:(id)headerObject bodyObject:(id)bodyObject fragmentHandler:(id)fragmentHandler
 {
-    if( (writeBuffer == NULL) || (bufferLength == 0) || ([headerObject isKindOfClass:[NSData class]] == NO) || ([bodyObject isKindOfClass:[NSData class]] == NO) ) {
+    if( (writeBuffer == NULL) || (bufferLength == 0) ) {
         return 0;
     }
     NSUInteger headerLength = [self lengthOfHeaderFromHeaderObject:headerObject];
@@ -150,13 +164,19 @@
     return amountLength;
 }
 
-- (BOOL)prepareAfterConnected
+- (BOOL)clientReadyForKey:(NSString *)clientKey fromServerKey:(NSString *)serverKey
 {
     return YES;
 }
 
-- (void)resetAfterDisconnected
+- (BOOL)serverReadyForKey:(NSString *)serverKey
 {
+    return YES;
+}
+
+- (id)disconnectReasonObject:(id)sessionQuery
+{
+    return nil;
 }
 
 @end

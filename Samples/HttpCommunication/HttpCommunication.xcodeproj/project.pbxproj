@@ -15,7 +15,8 @@
 		029035C41C8D21880016449A /* HJAsyncTcpCommunicateDogma.m in Sources */ = {isa = PBXBuildFile; fileRef = 029035BF1C8D21880016449A /* HJAsyncTcpCommunicateDogma.m */; };
 		029035C51C8D21880016449A /* HJAsyncTcpCommunicateExecutor.m in Sources */ = {isa = PBXBuildFile; fileRef = 029035C11C8D21880016449A /* HJAsyncTcpCommunicateExecutor.m */; };
 		029035C61C8D21880016449A /* HJAsyncTcpCommunicateManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 029035C31C8D21880016449A /* HJAsyncTcpCommunicateManager.m */; };
-		029035C81C8EC8690016449A /* SimpleHttpDogma.swift in Sources */ = {isa = PBXBuildFile; fileRef = 029035C71C8EC8690016449A /* SimpleHttpDogma.swift */; };
+		27A3D4572214204D00F80419 /* SimpleHttpClientDogma.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A3D4552214204D00F80419 /* SimpleHttpClientDogma.swift */; };
+		27A3D4582214204D00F80419 /* SimpleHttpServerDogma.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A3D4562214204D00F80419 /* SimpleHttpServerDogma.swift */; };
 		4D77D5B9E9FE34C8283F4C54 /* libPods-HttpCommunication.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4269A73A08F53054212CE6F4 /* libPods-HttpCommunication.a */; };
 /* End PBXBuildFile section */
 
@@ -34,7 +35,8 @@
 		029035C11C8D21880016449A /* HJAsyncTcpCommunicateExecutor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = HJAsyncTcpCommunicateExecutor.m; path = ../../Sources/HJAsyncTcpCommunicateExecutor.m; sourceTree = "<group>"; };
 		029035C21C8D21880016449A /* HJAsyncTcpCommunicateManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = HJAsyncTcpCommunicateManager.h; path = ../../Sources/HJAsyncTcpCommunicateManager.h; sourceTree = "<group>"; };
 		029035C31C8D21880016449A /* HJAsyncTcpCommunicateManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = HJAsyncTcpCommunicateManager.m; path = ../../Sources/HJAsyncTcpCommunicateManager.m; sourceTree = "<group>"; };
-		029035C71C8EC8690016449A /* SimpleHttpDogma.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SimpleHttpDogma.swift; sourceTree = "<group>"; };
+		27A3D4552214204D00F80419 /* SimpleHttpClientDogma.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SimpleHttpClientDogma.swift; sourceTree = "<group>"; };
+		27A3D4562214204D00F80419 /* SimpleHttpServerDogma.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SimpleHttpServerDogma.swift; sourceTree = "<group>"; };
 		4269A73A08F53054212CE6F4 /* libPods-HttpCommunication.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-HttpCommunication.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A888CF2A0B15B359A6EA086A /* Pods-HttpCommunication.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HttpCommunication.debug.xcconfig"; path = "Pods/Target Support Files/Pods-HttpCommunication/Pods-HttpCommunication.debug.xcconfig"; sourceTree = "<group>"; };
 		FD73A1838D0767B16811CF5F /* Pods-HttpCommunication.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HttpCommunication.release.xcconfig"; path = "Pods/Target Support Files/Pods-HttpCommunication/Pods-HttpCommunication.release.xcconfig"; sourceTree = "<group>"; };
@@ -76,7 +78,8 @@
 			children = (
 				029035AA1C8D21390016449A /* AppDelegate.swift */,
 				029035AC1C8D21390016449A /* ViewController.swift */,
-				029035C71C8EC8690016449A /* SimpleHttpDogma.swift */,
+				27A3D4552214204D00F80419 /* SimpleHttpClientDogma.swift */,
+				27A3D4562214204D00F80419 /* SimpleHttpServerDogma.swift */,
 				029035AE1C8D21390016449A /* Main.storyboard */,
 				029035B11C8D21390016449A /* Assets.xcassets */,
 				029035B31C8D21390016449A /* LaunchScreen.storyboard */,
@@ -149,7 +152,7 @@
 				TargetAttributes = {
 					029035A61C8D21390016449A = {
 						CreatedOnToolsVersion = 7.2.1;
-						LastSwiftMigration = 0830;
+						LastSwiftMigration = 1010;
 					};
 				};
 			};
@@ -212,10 +215,11 @@
 			files = (
 				029035C41C8D21880016449A /* HJAsyncTcpCommunicateDogma.m in Sources */,
 				029035C51C8D21880016449A /* HJAsyncTcpCommunicateExecutor.m in Sources */,
-				029035C81C8EC8690016449A /* SimpleHttpDogma.swift in Sources */,
 				029035AD1C8D21390016449A /* ViewController.swift in Sources */,
 				029035AB1C8D21390016449A /* AppDelegate.swift in Sources */,
 				029035C61C8D21880016449A /* HJAsyncTcpCommunicateManager.m in Sources */,
+				27A3D4572214204D00F80419 /* SimpleHttpClientDogma.swift in Sources */,
+				27A3D4582214204D00F80419 /* SimpleHttpServerDogma.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -342,7 +346,8 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "HttpCommunication-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 3.0;
+				SWIFT_SWIFT3_OBJC_INFERENCE = On;
+				SWIFT_VERSION = 4.2;
 			};
 			name = Debug;
 		};
@@ -358,7 +363,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.p9soft.HttpCommunication;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "HttpCommunication-Bridging-Header.h";
-				SWIFT_VERSION = 3.0;
+				SWIFT_SWIFT3_OBJC_INFERENCE = On;
+				SWIFT_VERSION = 4.2;
 			};
 			name = Release;
 		};

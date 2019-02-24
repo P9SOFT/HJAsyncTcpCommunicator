@@ -1,6 +1,6 @@
 //
-//  HttpDogma.swift
-//  HttpCommunication
+//  SimpleHttpClientDogma.swift
+//
 //
 //  Created by Tae Hyun Na on 2016. 3. 7.
 //  Copyright (c) 2014, P9 SOFT, Inc. All rights reserved.
@@ -9,14 +9,19 @@
 
 import Foundation
 
-class SimpleHttpDogma : HJAsyncTcpCommunicateDogma
+class SimpleHttpClientDogma : HJAsyncTcpCommunicateDogma
 {
+    override func supportMode() -> HJAsyncTcpCommunicateDogmaSupportMode {
+        
+        return .client
+    }
+    
     override func methodType() -> HJAsyncTcpCommunicateDogmaMethodType {
         
         return .headerWithBody
     }
     
-    override func lengthOfHeader(fromStream stream:UnsafeMutablePointer<UInt8>?, streamLength:UInt, appendedLength:UInt) -> UInt {
+    override func lengthOfHeader(fromStream stream: UnsafeMutablePointer<UInt8>?, streamLength: UInt, appendedLength: UInt, sessionQuery: Any?) -> UInt {
         
         guard let stream = stream else {
             return 0
@@ -31,7 +36,7 @@ class SimpleHttpDogma : HJAsyncTcpCommunicateDogma
         return 0
     }
     
-    override func headerObject(fromHeaderStream stream:UnsafeMutablePointer<UInt8>?, streamLength:UInt) -> Any? {
+    override func headerObject(fromHeaderStream stream: UnsafeMutablePointer<UInt8>?, streamLength: UInt, sessionQuery: Any?) -> Any? {
         
         guard let stream = stream else {
             return nil
@@ -62,10 +67,10 @@ class SimpleHttpDogma : HJAsyncTcpCommunicateDogma
             return 0
         }
         let contentLengthString = headerString.substring(with: NSMakeRange(beginIndex, endRange.location-beginIndex))
-        return UInt(contentLengthString)!
+        return UInt(contentLengthString) ?? 0
     }
     
-    override func bodyObject(fromBodyStream stream:UnsafeMutablePointer<UInt8>?, streamLength:UInt, headerObject:Any?) -> Any? {
+    override func bodyObject(fromBodyStream stream: UnsafeMutablePointer<UInt8>?, streamLength: UInt, headerObject: Any?, sessionQuery: Any?) -> Any? {
         
         guard let stream = stream else {
             return nil
@@ -102,8 +107,8 @@ class SimpleHttpDogma : HJAsyncTcpCommunicateDogma
         guard let writeBuffer = writeBuffer, bufferLength > 0 else {
             return 0;
         }
-        let headerLength:UInt = (headerObject != nil) ? lengthOfHeader(fromHeaderObject: headerObject!) : 0
-        let bodyLength:UInt! = (bodyObject != nil) ? lengthOfBody(fromBodyObject: bodyObject!) : 0
+        let headerLength:UInt = (headerObject != nil) ? lengthOfHeader(fromHeaderObject: headerObject) : 0
+        let bodyLength:UInt = (bodyObject != nil) ? lengthOfBody(fromBodyObject: bodyObject) : 0
         let amountLength = headerLength + bodyLength
         if (amountLength <= 0) || (amountLength > bufferLength) {
             return 0
@@ -111,10 +116,9 @@ class SimpleHttpDogma : HJAsyncTcpCommunicateDogma
         let plook:UnsafeMutablePointer<UInt8> = writeBuffer
         if let headerString = headerObject as? NSString, headerLength > 0 {
             memcpy(plook, headerString.utf8String, Int(headerLength))
-            plook.pointee += UInt8(headerLength)
         }
         if let bodyString = bodyObject as? NSString, bodyLength > 0 {
-            memcpy(plook, bodyString.utf8String, Int(bodyLength))
+            memcpy(plook.advanced(by: Int(headerLength)), bodyString.utf8String, Int(bodyLength))
         }
         return amountLength;
     }
