@@ -122,7 +122,7 @@
     return have;
 }
 
-- (NSInteger)countOfSockfdForServerKey:(NSString * _Nullable)key
+- (NSInteger)countOfSockfdForServerKey:(NSString *)key
 {
     if( key.length == 0 ) {
         return NO;
@@ -134,7 +134,7 @@
     return count;
 }
 
-- (HJAsyncTcpServerInfo *)serverInfoForClientKey:(NSString * _Nullable)key
+- (HJAsyncTcpServerInfo *)serverInfoForClientKey:(NSString *)key
 {
     if( key.length == 0 ) {
         return nil;

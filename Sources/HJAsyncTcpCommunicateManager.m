@@ -371,7 +371,7 @@
     return [_executor haveSockfdForKey:serverKey];
 }
 
-- (NSInteger)countOfClientsAtServerForServerKey:(NSString * _Nullable)serverKey
+- (NSInteger)countOfClientsAtServerForServerKey:(NSString *)serverKey
 {
     HJAsyncTcpServerInfo *serverInfo = nil;
     if( (self.standby == YES) && (serverKey.length > 0) ) {
@@ -385,7 +385,7 @@
     return [_executor countOfSockfdForServerKey:serverKey];
 }
 
-- (HJAsyncTcpServerInfo *)serverInfoForClientKey:(NSString * _Nullable)clientKey
+- (HJAsyncTcpServerInfo *)serverInfoForClientKey:(NSString *)clientKey
 {
     if( clientKey.length == 0 ) {
         return nil;
