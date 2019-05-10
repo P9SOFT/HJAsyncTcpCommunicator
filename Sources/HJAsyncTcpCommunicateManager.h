@@ -43,7 +43,7 @@ typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateManagerEvent)
 - (BOOL)standbyWithWorkerName:(NSString * _Nullable)workerName;
 
 - (BOOL)setServerInfo:(HJAsyncTcpServerInfo * _Nullable)serverInfo forServerKey:(NSString * _Nullable)serverKey;
-- (HJAsyncTcpServerInfo *)serverInfoForServerKey:(NSString * _Nullable)serverKey;
+- (HJAsyncTcpServerInfo * _Nullable)serverInfoForServerKey:(NSString * _Nullable)serverKey;
 - (void)removeServerInfoForServerKey:(NSString * _Nullable)serverKey;
 - (void)removeAllServerInfos;
 
@@ -75,7 +75,7 @@ typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateManagerEvent)
 - (BOOL)isConnectingForClientKey:(NSString * _Nullable)clientKey;
 - (BOOL)isBindingForServerKey:(NSString * _Nullable)serverKey;
 - (NSInteger)countOfClientsAtServerForServerKey:(NSString * _Nullable)serverKey;
-- (HJAsyncTcpServerInfo *)serverInfoForClientKey:(NSString * _Nullable)clientKey;
+- (HJAsyncTcpServerInfo * _Nullable)serverInfoForClientKey:(NSString * _Nullable)clientKey;
 
 @property (nonatomic, readonly) BOOL standby;
 

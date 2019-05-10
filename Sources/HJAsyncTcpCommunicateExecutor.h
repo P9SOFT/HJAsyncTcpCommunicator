@@ -83,8 +83,8 @@ typedef NS_ENUM(NSInteger, HJAsyncTcpCommunicateExecutorEvent)
 @property (nonatomic, strong) NSDictionary * _Nullable parameters;
 @property (nonatomic, assign) BOOL disableAccept;
 
-- (instancetype)initWithAddress:(NSString * _Nonnull)address port:(NSNumber * _Nonnull)port;
-- (instancetype)initWithAddress:(NSString * _Nonnull)address port:(NSNumber * _Nonnull)port parameters:(NSDictionary * _Nonnull)parameters;
+- (instancetype _Nonnull)initWithAddress:(NSString * _Nonnull)address port:(NSNumber * _Nonnull)port;
+- (instancetype _Nonnull)initWithAddress:(NSString * _Nonnull)address port:(NSNumber * _Nonnull)port parameters:(NSDictionary * _Nonnull)parameters;
 
 @end
 
